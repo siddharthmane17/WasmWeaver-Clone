@@ -1,0 +1,12 @@
+MAX_FUNCTIONS_PER_MODULE = 10  # This limits the max number of distinct functions per module
+MAX_FUNCTION_CALL_DEPTH = 4  # This limits the max depth of e.g. function calls
+FUNCTION_STOP_GENERATION_PROBABILITY = 0.1  # This is the probability that a function will stop and return after a random tile. Is evaluated after each tile is placed.
+BLOCK_STOP_GENERATION_PROBABILITY = 0.1
+MAX_BLOCKS_PER_FUNCTION = 2  # This limits the max number of blocks per function
+MAX_IF_ELSE_PER_BLOCK = 5  # This limits the max number of if-else statements per block
+MAX_LOCALS_PER_FUNCTION = 5  # This limits the max number of local variables per function
+MAX_GLOBALS_PER_MODULE = 5  # This limits the max number of global variables per module
+MEMORY_MAX_WRITE_INDEX = 64  # This limits the max index that can be written to in memory
+MAX_TABLES_PER_MODULE = 2  # This limits the max number of tables per module
+MAX_TABLE_SIZE = 10  # This limits the max size of a table
+MAX_STACK_SIZE = 10  # This limits the max size of the stack
