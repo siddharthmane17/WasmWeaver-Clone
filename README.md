@@ -1,5 +1,5 @@
 # WasmWeaver
-Is used for generating the dataset for WATMeter models. The generator generates **correct** code which will run to completion without exceptions.
+The generator generates **correct** code which will run to completion without exceptions.
 Further, soft lower response time/fuel/byte code limits and soft upper limits are used during generation to ensure that the generated code is within the bounds of the model (most of the time).
 
 #### Supported Instructions

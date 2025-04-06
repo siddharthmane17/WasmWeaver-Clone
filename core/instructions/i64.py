@@ -1081,7 +1081,7 @@ class Int64Store(AbstractTile):
         if not isinstance(value, I64):
             return False
         #Check if in range
-        if offset.value.astype(np.uint32) >= MEMORY_MAX_WRITE_INDEX - 4:
+        if offset.value.astype(np.uint32) >= MEMORY_MAX_WRITE_INDEX - 8:
             return False
         return True
 
