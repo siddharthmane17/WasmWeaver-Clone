@@ -4,6 +4,13 @@ from core.config.config import MAX_FUNCTION_CALL_DEPTH, MAX_STACK_SIZE
 from core.state.locals import Locals
 from core.value import Val
 
+class StackValueError(Exception):
+    """Custom exception for stack-related errors."""
+    pass
+
+class StackOverflowError(Exception):
+    """Exception raised when stack overflow occurs."""
+    pass
 
 class StackFrame:
     """A simple stack frame representation."""
@@ -22,9 +29,9 @@ class StackFrame:
 
     def stack_push(self, value: Val):
         if not isinstance(value, Val):
-            raise ValueError(f"Value {value} is not of type Val")
+            raise StackValueError(f"Value {value} is not of type Val")
         if MAX_STACK_SIZE < len(self.stack):
-            raise ValueError("Stack size limit reached")
+            raise StackOverflowError("Stack size limit reached")
         self.stack.append(value)
 
     def can_push_to_stack(self, n: int = 1):

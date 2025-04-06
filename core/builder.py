@@ -6,6 +6,7 @@ from core.constraints import ByteCodeSizeConstraint, FuelConstraint, Constraints
 from core.converter import global_state_to_wasm_program
 from core.loader import TileLoader
 from core.runner import run_global_state, wat_code_to_wasm, AbstractRunResult
+from core.state.stack import StackOverflowError, StackValueError
 from core.state.state import GlobalState
 from core.strategy import AbstractSelectionStrategy, RandomSelectionStrategy
 from core.util import generate_function
@@ -72,7 +73,7 @@ Generator[GeneratorResult, Any, None]:
 
             yield GeneratorResult(start_seed, code_str, byte_code, result,
                                   global_state.memory.initial_values[:MEMORY_MAX_WRITE_INDEX], canary_output)
-        except ConstraintsViolatedError:
+        except (ConstraintsViolatedError, StackOverflowError, StackValueError):
             if verbose:
                 print("Constraints violated")
             continue
