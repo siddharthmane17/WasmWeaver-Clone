@@ -164,3 +164,7 @@ class Memory:
 
     def randomize(self):
         self.memory = bytearray(random.choices(range(256), k=len(self.memory)))
+
+    def reinit_memory(self):
+        """Re-initializes the memory to its initial values."""
+        self.memory = bytearray(self.initial_values)

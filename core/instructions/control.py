@@ -628,7 +628,9 @@ class LoopTileFactory(AbstractTileFactory):
             rep_count = current_state.stack.get_current_frame().stack_peek(1).value
             if rep_count <= 0 or rep_count > 10000:
                 return False
-            #If and else blocks are generated at the same time, so it is ok to only check for the presence of the if_block
+
+            rep_count = rep_count + 1 #Loop is always executed once
+
             if tile.inner_block is None and MAX_BLOCKS_PER_FUNCTION <= len(current_function.blocks):
                 return False
             if tile.inner_block is None and current_state.constraints.remaining_resources(
@@ -661,7 +663,7 @@ class LoopTileFactory(AbstractTileFactory):
 
         def apply(self, current_state: GlobalState, current_function: Function):
             nonlocal tile, tile_loader
-            repetition_count = current_state.stack.get_current_frame().stack_pop().value
+            repetition_count = current_state.stack.get_current_frame().stack_pop().value + 1 #Loop is always executed once
 
             if tile.inner_block is None:
                 #Generate both blocks at the same time
@@ -678,8 +680,7 @@ class LoopTileFactory(AbstractTileFactory):
                     current_function.restore_checkpoint(current_function_backup)
 
                     #Modify fuel constraint
-                    current_state.constraints[FuelConstraint].resource = current_state.constraints[
-                                                                             FuelConstraint].resource // repetition_count
+                    current_state.constraints[FuelConstraint].resource = current_state.constraints[FuelConstraint].resource // repetition_count
 
                     tile.inner_block = generate_block(tile_loader, global_state, current_function,
                                                       [],

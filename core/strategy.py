@@ -1,5 +1,4 @@
 from typing import Type, TYPE_CHECKING
-
 from core.state.functions import Function
 from core.state.state import GlobalState
 if TYPE_CHECKING:
@@ -34,4 +33,8 @@ class RandomSelectionStrategy(AbstractSelectionStrategy):
         """
         Returns a random weight for the tile.
         """
+
+        if tile.name == "Canary":
+            return 0
+
         return 1

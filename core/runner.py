@@ -85,9 +85,9 @@ def run_global_state(global_state: GlobalState,
         #assert expected_memory_output == actual_memory_output, f"Memory output does not match. Expected {expected_memory_output[:MEMORY_MAX_WRITE_INDEX]}, got {actual_memory_output[:MEMORY_MAX_WRITE_INDEX]}"
         assert expected_memory_output == actual_memory_output, (
             f"Memory output does not match. Expected \n"
-            f"{' '.join(format(byte) for byte in initial_memory_output[:MEMORY_MAX_WRITE_INDEX])}, \n"
-            f"{' '.join(format(byte) for byte in expected_memory_output[:MEMORY_MAX_WRITE_INDEX])}, \n"
-            f"{' '.join(format(byte) for byte in actual_memory_output[:MEMORY_MAX_WRITE_INDEX])}"
+            f"Initial: {'\t'.join(format(byte) for byte in initial_memory_output[:MEMORY_MAX_WRITE_INDEX])}, \n"
+            f"Expected:{'\t'.join(format(byte) for byte in expected_memory_output[:MEMORY_MAX_WRITE_INDEX])}, \n"
+            f"Actual:  {'\t'.join(format(byte) for byte in actual_memory_output[:MEMORY_MAX_WRITE_INDEX])}"
         )
 
     result.fuel = total_fuel - store.get_fuel()

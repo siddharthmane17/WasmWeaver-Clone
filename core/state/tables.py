@@ -34,3 +34,7 @@ class Tables:
 
     def __len__(self):
         return len(self.tables)
+
+    def reinit_tables(self):
+        for table in self.tables.values():
+            table.wipe()

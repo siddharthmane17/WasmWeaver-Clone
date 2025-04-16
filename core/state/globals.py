@@ -33,9 +33,18 @@ class Globals:
     def __getitem__(self, item):
         return self.globals[item]
 
+    def reinit_globals(self):
+        """Re-initializes all global variables to their initial values."""
+        for global_var in self.globals:
+            global_var.value = deepcopy(global_var.init_value)
+
     def get_global_by_name(self, name: str):
         """Returns the global variable with the given name."""
         for global_var in self.globals:
             if global_var.name == name:
                 return global_var
         return None
+
+    def __str__(self):
+        """Returns a string representation of the global state."""
+        return ", ".join(global_var.name +" = "+ str(global_var.value) for global_var in self.globals)

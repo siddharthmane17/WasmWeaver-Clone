@@ -4,6 +4,7 @@ from typing import Generator, Any
 from config.config import MEMORY_MAX_WRITE_INDEX
 from core.constraints import ByteCodeSizeConstraint, FuelConstraint, ConstraintsViolatedError
 from core.converter import global_state_to_wasm_program
+from core.debug.debugger import generate_trace
 from core.loader import TileLoader
 from core.runner import run_global_state, wat_code_to_wasm, AbstractRunResult
 from core.state.stack import StackOverflowError, StackValueError
@@ -62,12 +63,20 @@ Generator[GeneratorResult, Any, None]:
             code_str = global_state_to_wasm_program(global_state)
             if verbose:
                 print(add_line_numbers_to_code(code_str))
-
-            result = run_global_state(global_state)
+            try:
+                result = run_global_state(global_state)
+            except Exception as e:
+                print(f"Error: {e}")
+                #Reset memory
+                global_state.memory.memory = bytearray(global_state.memory.initial_values[:MEMORY_MAX_WRITE_INDEX])
+                generate_trace(global_state, start_function="run", start_seed=start_seed)
+                raise e
             byte_code = wat_code_to_wasm(code_str)
             if verbose:
                 print(f"Fuel consumption: {result}")
                 print(f"Byte code size: {len(byte_code)}")
+
+
 
             canary_output = global_state.canary_output
 

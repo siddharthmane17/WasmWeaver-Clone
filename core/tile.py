@@ -5,8 +5,24 @@ from core.state.functions import Function
 from core.state.state import GlobalState
 from core.strategy import AbstractSelectionStrategy
 
+global_apply_callbacks = []
 
-class AbstractTile:
+class ApplyMeta(type):
+    def __new__(cls, name, bases, attrs):
+        orig_apply = attrs.get('apply', None)
+
+        if callable(orig_apply):
+            def wrapped_apply(self, *args, **kwargs):
+                for callback in global_apply_callbacks:
+                    callback(self, *args, **kwargs)
+                return orig_apply(self, *args, **kwargs)
+
+            attrs['apply'] = wrapped_apply
+
+        return super().__new__(cls, name, bases, attrs)
+
+
+class AbstractTile(metaclass=ApplyMeta):
     metrics_dependent_on_input = False
     name = "AbstractTile"  # This is the name of the tile
 

@@ -49,6 +49,12 @@ class StackFrame:
     def stack_peek_n_in_order(self, n):
         return [self.stack[-i] for i in range(1, n + 1)][::-1]
 
+    def __str__(self):
+        """Returns a string representation of the stack frame."""
+        stack_values = [str(val) for val in self.stack]
+        stack_locals = [str(val) for val in self.locals.locals]
+        return f"StackFrame(name={self.name}, locals={stack_locals}, stack={stack_values})"
+
 
 class Stack:
     """A simple global stack representation."""
