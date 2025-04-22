@@ -7,13 +7,19 @@ class ConstraintsViolatedError(Exception):
         self.message = message
         super().__init__(self.message)
 
+
 class AbstractConstraint:
     """An abstract class for constraints."""
 
     def __init__(self, min_target=0, max_target=100, initial: float = 0):
         self.resource = initial
+        self.initial = initial
         self.min_target = min_target
         self.max_target = max_target
+
+    def reset(self):
+        """Resets the constraint to its initial state."""
+        self.resource = self.initial
 
     def get_remaining_resource(self) -> float:
         """Returns the remaining resource."""

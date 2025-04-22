@@ -75,12 +75,6 @@ def run_global_state(global_state: GlobalState,
         #print("Running memory sanity check")
         expected_memory_output = global_state.memory.memory
         initial_memory_output = global_state.memory.initial_values
-        #print("Expected:")
-        #print(global_state.memory.__str__())
-        #m = generator.state.memory.Memory()
-        #m.memory = memory.read(store, 0, len(expected_memory_output))
-        #print("Actual:")
-        #print(m.__str__())
         actual_memory_output = memory.read(store, 0, len(expected_memory_output))
         #assert expected_memory_output == actual_memory_output, f"Memory output does not match. Expected {expected_memory_output[:MEMORY_MAX_WRITE_INDEX]}, got {actual_memory_output[:MEMORY_MAX_WRITE_INDEX]}"
         assert expected_memory_output == actual_memory_output, (
