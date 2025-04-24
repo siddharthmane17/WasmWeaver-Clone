@@ -1,11 +1,7 @@
-import math
-from math import factorial
-
 import numpy as np
 
 from core.state.functions import Function
 from core.state.state import GlobalState
-from core.strategy import AbstractSelectionStrategy
 from core.tile import AbstractTile
 from core.value import I32, I64, F32, F64
 

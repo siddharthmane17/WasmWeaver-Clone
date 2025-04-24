@@ -1,3 +1,4 @@
+import random
 from typing import Type, TYPE_CHECKING
 from core.state.functions import Function
 from core.state.state import GlobalState
@@ -37,4 +38,4 @@ class RandomSelectionStrategy(AbstractSelectionStrategy):
         if tile.name == "Canary":
             return 0
 
-        return 1
+        return random.random()
