@@ -307,7 +307,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                         current_state, current_function):
                     continue
                 function_tiles.append(
-                    self.create_function_indirect_call_tile(function, table_name, elem_index ))
+                    self.create_function_indirect_call_tile(function, table_name, elem_index))
         #Generate the create function tile
         create_function_tile = self.create_function_create_tile(current_state)
         if create_function_tile.can_be_placed(current_state, current_function):

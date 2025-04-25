@@ -38,10 +38,10 @@ class AbstractTableFactory(AbstractTileFactory):
         if new_set_tile.can_be_placed(global_state, current_function):
             yield new_set_tile
         #Currently disabled to not flood the stack with null ref
-        #new_get_tile = self.create_table_get_tile(generate_random_table_name(global_state),
-        #                                            create_table=True)
-        #if new_get_tile.can_be_placed(global_state, current_function):
-        #    yield new_get_tile
+        new_get_tile = self.create_table_get_tile(generate_random_table_name(global_state),
+                                                    create_table=True)
+        if new_get_tile.can_be_placed(global_state, current_function):
+            yield new_get_tile
 
     def create_table_get_tile(self, table_name: str, create_table: bool = False):
 

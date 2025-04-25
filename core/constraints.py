@@ -64,7 +64,6 @@ class ByteCodeSizeConstraint(AbstractConstraint):
 
 class FuelConstraint(AbstractConstraint):
     """A constraint that limits the gas."""
-
     def __init__(self, min_target=0, max_target=100, initial: float = 0):
         super().__init__(min_target, max_target, initial)
 
