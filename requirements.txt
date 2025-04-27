@@ -1,8 +1,9 @@
-numpy
-wasmtime
-torch
+numpy~=2.2.4
+wasmtime~=31.0.0
+torch~=2.6.0
 torchvision
 torchaudio
-matplotlib
-scipy
-gymnasium
+matplotlib~=3.10.1
+scipy~=1.15.2
+gymnasium~=1.1.1
+stable_baselines3~=2.6.0

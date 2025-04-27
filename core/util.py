@@ -13,6 +13,10 @@ from core.value import Val
 
 def stack_matches(global_state: GlobalState, expected: List[Type[Val]]):
     """Checks if the last values of the current stack frame match the expected types. This function does not modify the global state."""
+    #Check if stack is smaller then expected
+    if len(global_state.stack.get_current_frame().stack) < len(expected):
+        return False
+
     stack = global_state.stack.get_current_frame().stack_peek_n_in_order(len(expected))
     for i in range(len(stack)):
         if not isinstance(stack[i], expected[i]):
@@ -41,7 +45,7 @@ class Finish(AbstractTile):
 
 def generate_function(tile_loader: AbstractTileLoader, name: str, input_types: List[Type[Val]],
                       is_external,
-                      global_state: GlobalState, selection_strategy: AbstractSelectionStrategy = None, is_entry=False):
+                      global_state: GlobalState, selection_strategy: AbstractSelectionStrategy, is_entry, fixed_output_types: List[Type[Val]]):
     """Generates a internal/external function with the given name, input types, output types in the current global state."""
 
     global_checkpoint_count_before = len(global_state.checkpoints)
@@ -56,7 +60,7 @@ def generate_function(tile_loader: AbstractTileLoader, name: str, input_types: L
     if global_state.constraints.any_violated():
         raise ValueError(f"Constraints are already violated at the beginning of function generation")
 
-    f = Function(name, inputs=input_types, outputs=[], is_external=is_external)
+    f = Function(name, inputs=input_types, outputs=fixed_output_types, is_external=is_external)
     f.selection_strategy = selection_strategy
     #Add function stack frame
     global_state.stack.push_frame(global_state.stack.get_current_frame().stack_pop_n_in_order(len(input_types)),
@@ -73,13 +77,18 @@ def generate_function(tile_loader: AbstractTileLoader, name: str, input_types: L
         placeable_tiles = tile_loader.get_placeable_tiles(global_state, current_function=f)
 
         #Check if function can be finished
-        if (is_entry and global_state.constraints.is_finished()) or not is_entry:
-            placeable_tiles.append(Finish)
+
+        if compare_stack_frame_for_type_equality(global_state.stack.get_current_frame(), fixed_output_types):
+            if is_entry:
+                if global_state.constraints.is_finished():
+                    placeable_tiles.append(Finish)
+            else:
+                placeable_tiles.append(Finish)
 
         #If no placeable tiles, reset to checkpoint
         if not placeable_tiles:
             global_state.restore_checkpoint(before_generation_checkpoint)
-            f = Function(name, inputs=input_types, outputs=[], is_external=is_external)
+            f = Function(name, inputs=input_types, outputs=fixed_output_types, is_external=is_external)
             f.selection_strategy = selection_strategy
             for i, inp in enumerate(input_types):
                 f.local_types.append(inp)
@@ -98,24 +107,18 @@ def generate_function(tile_loader: AbstractTileLoader, name: str, input_types: L
 
         #Check if constraints are violated
         if global_state.constraints.any_violated():
-            raise ConstraintsViolatedError()
+            global_state.restore_checkpoint(before_generation_checkpoint)
+            f = Function(name, inputs=input_types, outputs=fixed_output_types, is_external=is_external)
+            f.selection_strategy = selection_strategy
+            for i, inp in enumerate(input_types):
+                f.local_types.append(inp)
+            continue
 
         #Check if constraints are finished
-        if tile.name == "Finish":
-            if is_entry:
-                #Drop all values from stack if function is entry
-                drop_tile_type = tile_loader.get_tile_type_by_name("Drop")
-                for _ in range(len(global_state.stack.get_current_frame().stack)):
-                    drop_tile = drop_tile_type(random.randint(0, 2 ** 32 - 1))
-                    drop_tile.apply(global_state, f)
-                    f.tiles.append(drop_tile)
-
-            else:
-                #Add all values from stack to output if function is not entry
-                for val in global_state.stack.get_current_frame().stack_pop_n_in_order(
-                        len(global_state.stack.get_current_frame().stack)):
-                    global_state.stack.get_last_frame().stack_push(val)
-                    f.outputs.append(type(val))
+        if tile.name == "Finish" or (global_state.constraints.is_finished() and compare_stack_frame_for_type_equality(global_state.stack.get_current_frame(), fixed_output_types)):
+            for val in global_state.stack.get_current_frame().stack_pop_n_in_order(
+                    len(global_state.stack.get_current_frame().stack)):
+                global_state.stack.get_last_frame().stack_push(val)
             #Check if stack is empty
             if len(global_state.stack.get_current_frame().stack) != 0:
                 raise ValueError(
@@ -151,7 +154,7 @@ def compare_stack_frame_for_type_equality(current_stack_frame: StackFrame, expec
 
 def generate_block(tile_loader: AbstractTileLoader, global_state: GlobalState, current_function: Function,
                    input_types: List[Type[Val]], name: str,
-                   depth=0, fixed_output_types: None | List[Type[Val]] = None):
+                   depth, fixed_output_types: List[Type[Val]]):
     """Generates a block in the current function with the given name"""
 
     if not stack_matches(global_state, input_types):
@@ -180,8 +183,7 @@ def generate_block(tile_loader: AbstractTileLoader, global_state: GlobalState, c
             global_state.restore_checkpoint(before_generation_checkpoint)
             current_function.restore_checkpoint(before_generation_function_checkpoint)
             block = current_function.blocks[-1]
-            raise ConstraintsViolatedError()
-            #continue
+            continue
         tile = max(placeable_tiles, key=lambda x: x.get_weight(global_state, current_function, current_function.selection_strategy))(random.randint(0, 2 ** 32 - 1))
         tile.apply(global_state, current_function)
         tile.apply_constraints(global_state, current_function)
@@ -190,9 +192,15 @@ def generate_block(tile_loader: AbstractTileLoader, global_state: GlobalState, c
 
 
         if global_state.constraints.any_violated():
-            raise ConstraintsViolatedError()
+            print("Constraints violated!")
+            print("ST:", [type(val) for val in global_state.stack.get_current_frame().stack])
+            print("ET:", fixed_output_types)
+            global_state.restore_checkpoint(before_generation_checkpoint)
+            current_function.restore_checkpoint(before_generation_function_checkpoint)
+            block = current_function.blocks[-1]
+            continue
 
-        if tile.name == "Finish":
+        if tile.name == "Finish" or (global_state.constraints.is_finished() and compare_stack_frame_for_type_equality(global_state.stack.get_current_frame(), fixed_output_types)):
             global_state.delete_checkpoint(before_generation_checkpoint)
             current_function.delete_checkpoint(before_generation_function_checkpoint)
             #Add all values from stack to output

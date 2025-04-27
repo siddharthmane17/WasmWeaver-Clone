@@ -20,8 +20,8 @@ def main():
     cpu_only_platform = AbstractPlatform("Test Platform", cpu_cycles_per_second=4 * 10e9)
     gpu_only_platform = AbstractPlatform("Test Platform", cpu_cycles_per_second=2 * 10e9,
                                          gpu_cycles_per_second=1 * 10e9)
-    for result in generate_code(19515-1, min_byte_code_size=150, max_byte_code_size=200, min_fuel=0,
-                                max_fuel=200_000_000, verbose=True, selection_strategy=RandomSelectionStrategy()):
+    for result in generate_code(19515-1, min_byte_code_size=10, max_byte_code_size=50, min_fuel=0,
+                                max_fuel=2000, verbose=True, selection_strategy=RandomSelectionStrategy()):
         print(result.code_str)
         print("Fuel:", result.abstract_run_result.fuel)
         print("Ext:", result.abstract_run_result.ext_resources)

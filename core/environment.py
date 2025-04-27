@@ -3,7 +3,12 @@ import threading
 from typing import Any, SupportsFloat, List, Type
 
 import gymnasium as gym
+import numpy as np
+from gymnasium import Space
 from gymnasium.core import ObsType, ActType
+from gymnasium.spaces import Dict, Box
+from gymnasium.spaces.space import T_cov
+from ray.rllib.env import EnvContext
 
 from core.constraints import AbstractConstraint, ByteCodeSizeConstraint, FuelConstraint
 from core.loader import TileLoader
@@ -35,28 +40,65 @@ class EnvSelectionStrategy(AbstractSelectionStrategy):
             raise Exception("Thread was reset!")
         self.env.current_state = current_state
         self.env.current_function = current_function
+        self.env.current_tile = tile
         self.env.global_state_ready.release()
         self.env.action_ready.acquire()
         return self.env.selected_weight
 
 
+class ObjectSpace(Space):
+    def __init__(self, cls: type | tuple[type, ...] | None = None):
+        #  shape=()  → scalar (one object per env)
+        #  dtype=object  → NumPy will store just the reference
+        super().__init__(shape=(1,), dtype=np.object_)
+        self._cls = cls
+
+    def contains(self, x) -> bool:              # called by RLlib checks
+        return self._cls is None or isinstance(x, self._cls)
+
+    # Not used by RLlib but keeps the API complete
+    def sample(self, mask: Any | None = None) -> T_cov:
+        raise NotImplementedError("Cannot sample an arbitrary object.")
+
+OBSERVATION_SPACE = Dict({"global_state": ObjectSpace(),
+                                       "current_function": ObjectSpace(),
+                                       "tile": ObjectSpace()})
+
+ACTION_SPACE =  gym.spaces.Box(low=0, high=1, shape=(1,))
+
 class WasmWeaverEnv(gym.Env):
 
-    def __init__(self, constraints: List[AbstractConstraint]):
+    def __init__(self, config: EnvContext):
         super(WasmWeaverEnv, self).__init__()
-        self.action_space = gym.spaces.Box(low=0, high=1, shape=(1,))
-        self.observation_space = gym.spaces.Dict({"global_state": gym.spaces.Text(100),
-                                                  "current_function": gym.spaces.Text(100)}) # Change to appropriate spaces later
-        self.constraints: List[AbstractConstraint] = constraints
+        self.action_space =  ACTION_SPACE# The weight
+        self.observation_space = OBSERVATION_SPACE
+        self.constraints: List[AbstractConstraint] = config.get("constraints", [])
         self.global_state_ready = threading.Semaphore(0)
         self.action_ready = threading.Semaphore(0)
         self.current_state: GlobalState | None = None
+        self.current_tile: Type[AbstractTile] | None = None
         self.current_function: Function | None = None
         self.selected_weight: float = 0
         self.thread: threading.Thread | None = None
         self.tile_loader = TileLoader("core/instructions/")
         self.finish_state = None
         self.finish_thread = False
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the thread from the state
+        del state['thread']
+        del state['global_state_ready']
+        del state['action_ready']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # Recreate the semaphores
+        self.global_state_ready = threading.Semaphore(0)
+        self.action_ready = threading.Semaphore(0)
+        # Recreate the thread
+        self.thread = None
 
     def generate(self):
         try:
@@ -71,8 +113,6 @@ class WasmWeaverEnv(gym.Env):
             self.finish_state = e
             self.global_state_ready.release()
 
-
-
     def _init_state(self):
         if self.thread is not None and self.thread.is_alive():
             self.finish_thread = True
@@ -81,7 +121,7 @@ class WasmWeaverEnv(gym.Env):
             self.finish_thread = False
         self.init_state = GlobalState()
         for constraint in self.constraints:
-            #Reset constraints
+            # Reset constraints
             constraint.reset()
             self.init_state.constraints.add(constraint)
         self.init_state.stack.push_frame(params=None, stack=[], name="origin")
@@ -107,8 +147,9 @@ class WasmWeaverEnv(gym.Env):
         elif self.finish_state == "Success":
             reward = FINISHED_SUCCESS
             done = True
-        return ({"global_state": self.current_state,
-                 "current_function": self.current_function},
+        return ({"global_state": np.array([self.current_state],dtype=object),
+                 "current_function": np.array([self.current_function],dtype=object),
+                 "tile": np.array([self.current_tile],dtype=object)},
                 reward,
                 done,
                 truncated,
@@ -126,8 +167,9 @@ class WasmWeaverEnv(gym.Env):
         self._init_state()
         self.global_state_ready.acquire()
 
-        return ({"global_state": self.current_state,
-                 "current_function": self.current_function},
+        return ({"global_state": np.array([self.current_state],dtype=object),
+                 "current_function": np.array([self.current_function],dtype=object),
+                 "tile": np.array([self.current_tile],dtype=object)},
                 {})
 
 
@@ -137,7 +179,8 @@ def main():
         entry_point=WasmWeaverEnv,
     )
 
-    env = gym.make("gymnasium_env/WasmWeaverEnv-v0",constraints=[ByteCodeSizeConstraint(0, 100), FuelConstraint(10, 5000)])
+    env = gym.make("gymnasium_env/WasmWeaverEnv-v0",
+                   constraints=[ByteCodeSizeConstraint(0, 100), FuelConstraint(10, 5000)])
     print("Environment created")
     for epoch in range(100):
         done = False

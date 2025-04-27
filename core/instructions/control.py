@@ -41,6 +41,15 @@ def generate_random_loop_name(function: Function) -> str:
                 continue
         return name
 
+def generate_random_condition_name(function: Function) -> str:
+    """Generates a random block name that is not already used in the function"""
+    while True:
+        name = f"condition_{random.randint(0, 2 ** 32 - 1)}"
+        for block in function.blocks:
+            if block.name == name:
+                continue
+        return name
+
 
 class AbstractFunctionTileFactory(AbstractTileFactory):
 
@@ -69,6 +78,8 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         def apply(self, current_state: GlobalState, current_function: Function):
             nonlocal function
             if function is None:
+                forced_output_type_len = random.randint(0, 2)
+                forced_output_types = [type(get_random_val()) for _ in range(0, forced_output_type_len)]
                 generate_function(tile_loader,
                                   name,
                                   [type(stack_var) for stack_var in
@@ -76,7 +87,8 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                                        random.randint(0, len(current_state.stack.get_current_frame().stack)))],
                                   is_external,
                                   current_state,
-                                  is_entry=False,selection_strategy=current_function.selection_strategy)
+                                  is_entry=False,selection_strategy=current_function.selection_strategy,
+                                  fixed_output_types=forced_output_types)
 
                 function = current_state.functions.functions[name]
                 self.get_byte_code_size = function.get_byte_code_size
@@ -371,12 +383,14 @@ class AbstractBlockTileFactory(AbstractTileFactory):
             nonlocal tile, tile_loader
             if tile.block is None:
                 tile.name = generate_random_block_name(current_function)
+                forced_output_type_len = random.randint(0, 2)
+                forced_output_types = [type(get_random_val()) for _ in range(0, forced_output_type_len)]
                 tile.block = generate_block(tile_loader, global_state, current_function,
                                             [type(stack_var) for stack_var in
                                              current_state.stack.get_current_frame().stack_peek_n_in_order(
                                                  min(2, random.randint(0,
                                                                        len(current_state.stack.get_current_frame().stack))))],
-                                            tile.name, depth=0)
+                                            tile.name, depth=0, fixed_output_types=forced_output_types)
                 tile.generate_code = tile.block.generate_code
                 tile.get_byte_code_size = tile.block.get_byte_code_size
                 tile.get_fuel_cost = tile.block.get_fuel_cost
@@ -423,6 +437,7 @@ class ConditionTileFactory(AbstractTileFactory):
             #If and else blocks are generated at the same time, so it is ok to only check for the presence of the if_block
             if tile.if_block is None and MAX_BLOCKS_PER_FUNCTION <= len(current_function.blocks):
                 return False
+            #Make sure there is enough space for the block
             if tile.if_block is None and current_state.constraints.remaining_resources(
                     FuelConstraint) >= 10 and current_state.constraints.remaining_resources(ByteCodeSizeConstraint) >= 10:
                 return True
@@ -458,6 +473,7 @@ class ConditionTileFactory(AbstractTileFactory):
             should_execute_if = current_state.stack.get_current_frame().stack_pop().value != 0
 
             if tile.if_block is None:
+                tile.name = generate_random_condition_name(current_function)
                 #Generate both blocks at the same time
                 n_inputs = random.randint(0, min(2, len(current_state.stack.get_current_frame().stack)))
                 input_types = [type(stack_var) for stack_var in
@@ -511,11 +527,6 @@ class ConditionTileFactory(AbstractTileFactory):
                     current_state.tables.set(copy.deepcopy(table))
 
                 current_function.local_types = copy.deepcopy(required_local_types_else)
-                #print(current_state.stack.get_current_frame().locals.locals)
-                #print("abb", current_function.local_types)
-
-                #Generate if block
-                #print("If block start")
                 tile.if_block = generate_block(tile_loader, global_state, current_function,
                                                input_types,
                                                "if", depth=0, fixed_output_types=forced_output_types)

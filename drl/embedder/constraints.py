@@ -21,7 +21,8 @@ class ConstraintsEmbedder:
         for constraint in constraints:
             embedding = self.embed_constraint(constraint)
             combined_embedding = torch.cat((combined_embedding, embedding), dim=0)
-        return combined_embedding
+        #Make sure, that the output is float32
+        return combined_embedding.to(torch.float32)
 
 
 if __name__ == "__main__":

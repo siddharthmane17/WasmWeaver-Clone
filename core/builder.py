@@ -59,9 +59,10 @@ Generator[GeneratorResult, Any, None]:
             global_state.constraints.add(FuelConstraint(min_fuel, max_fuel))
             global_state.stack.push_frame(params=None, stack=[], name="origin")
             generate_function(tile_loader, "run", [], False, global_state,
-                              is_entry=True, selection_strategy=selection_strategy)
+                              is_entry=True, selection_strategy=selection_strategy,fixed_output_types=[])
             code_str = global_state_to_wasm_program(global_state)
             if verbose:
+                print(code_str)
                 print(add_line_numbers_to_code(code_str))
             try:
                 result = run_global_state(global_state)
