@@ -2,7 +2,7 @@ import importlib
 import os
 from typing import List, Type, TypeVar
 
-from core.state.functions import Function
+from core.state.functions import Function, Block
 from core.state.state import GlobalState
 from core.tile import AbstractTile, AbstractTileFactory
 
@@ -11,7 +11,7 @@ T = TypeVar('T')
 
 class AbstractTileLoader:
 
-    def get_placeable_tiles(self, state: GlobalState, current_function: Function) -> List[Type[AbstractTile]]:
+    def get_placeable_tiles(self, state: GlobalState, current_function: Function, current_blocks: List[Block]) -> List[Type[AbstractTile]]:
         """Return a list of tiles that can be placed in the current state."""
         raise NotImplementedError
 
@@ -29,12 +29,12 @@ class TileLoader(AbstractTileLoader):
         self.factories: List[AbstractTileFactory] = [factory(0, self) for factory in
                                                      self._load_classes(path, AbstractTileFactory)]
 
-    def get_placeable_tiles(self, state: GlobalState, current_function: Function) -> List[Type[AbstractTile]]:
+    def get_placeable_tiles(self, state: GlobalState, current_function: Function, current_blocks: List[Block]) -> List[Type[AbstractTile]]:
         """Return a list of tiles that can be placed in the current state."""
-        static_tiles = [tile for tile in self.tiles if tile.can_be_placed(state, current_function)]
+        static_tiles = [tile for tile in self.tiles if tile.can_be_placed(state, current_function,current_blocks)]
         dynamic_tiles = []
         for factory in self.factories:
-            dynamic_tiles.extend(factory.generate_all_placeable_tiles(state, current_function))
+            dynamic_tiles.extend(factory.generate_all_placeable_tiles(state, current_function,current_blocks))
         return static_tiles + dynamic_tiles
 
     def get_tile_type_by_name(self, name: str) -> Type[AbstractTile]:

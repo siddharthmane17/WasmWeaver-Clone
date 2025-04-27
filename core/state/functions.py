@@ -1,6 +1,8 @@
 import copy
 from typing import List, TYPE_CHECKING, Type, Dict
 
+from core.formater import indent_code
+
 if TYPE_CHECKING:
     from core.tile import AbstractTile
     from state import GlobalState
@@ -14,12 +16,11 @@ from core.value import Val
 class Block:
     """A simple block representation"""
 
-    def __init__(self, name: str, depth: int):
+    def __init__(self, name: str):
         self.name = name
         self.inputs: List[Type[Val]] = []
         self.outputs: List[Type[Val]] = []
         self.tiles: List["AbstractTile"] = []
-        self.depth = depth
 
     def get_byte_code_size(self):
         """Returns the byte code size of the block"""
@@ -33,24 +34,21 @@ class Block:
         """Returns the response time of the block"""
         return sum(tile.get_response_time() for tile in self.tiles)
 
-    def generate_code(self, current_state: "GlobalState", current_function: "Function") -> str:
+    def generate_code(self, current_state: "GlobalState", current_function: "Function", current_blocks: List["Block"]) -> str:
         """Generates the code of the block"""
-        result_str = (" " * self.depth * 4) + (
-            (f"(block ${self.name}" if self.name not in ["if", "else", "end"] else f"{self.name}"))
+        result_str = (f"block ${self.name}" if self.name not in ["if", "else"] else f"{self.name}")
         # Add inputs
         if self.inputs and self.name not in ["else"]:
             result_str += f" (param {' '.join(input_type.get_wasm_type() for input_type in self.inputs)})"
         # Add outputs
         if self.outputs and self.name not in ["else"]:
-            result_str += f" (result {' '.join(output_type.get_wasm_type() for output_type in self.outputs)})\n"
+            result_str += f" (result {' '.join(output_type.get_wasm_type() for output_type in self.outputs)})"
+        result_str += "\n"
         if self.tiles:
-            result_str += (" " * (self.depth + 1) * 4) + ("\n" + " " * (self.depth + 1) * 4).join(
-                "        " + tile.generate_code(current_state, current_function) for tile in self.tiles)
+            result_str += indent_code(("\n").join(tile.generate_code(current_state, current_function,current_blocks=current_blocks+[self]) for tile in self.tiles))
             result_str += "\n"
-        if self.name not in ["if", "else", "end"]:
-            result_str += (" " * self.depth * 4) + "    )\n"
-        if self.name in ["else"]:
-            result_str += (" " * self.depth * 4) + "    end\n"
+        if self.name not in ["if"]:
+            result_str += "end\n"
         return result_str
 
 
@@ -134,7 +132,7 @@ class Function:
             result_str += "))\n"
             return result_str
         else:
-            result_str = f"    (func ${self.name} (export \"{self.name}\")"
+            result_str = f"(func ${self.name} (export \"{self.name}\")"
             if self.inputs:
                 result_str += f" (param {' '.join(input_type.get_wasm_type() for input_type in self.inputs)})"
             if self.outputs:
@@ -142,13 +140,12 @@ class Function:
             result_str += "\n"
             #Add temp local
             if self.local_types[len(self.inputs):]:
-                result_str += "        (local " + " ".join(
-                    local_type.get_wasm_type() for local_type in self.local_types[len(self.inputs):]) + ")\n"
-            result_str += "        (local $temp i32)\n"
-            result_str += "\n".join(
-                "        " + tile.generate_code(current_state, current_function) for tile in self.tiles)
+                result_str += indent_code("(local " + " ".join(
+                    local_type.get_wasm_type() for local_type in self.local_types[len(self.inputs):]) + ")\n")
+            result_str += indent_code("(local $temp i32)\n")
+            result_str += indent_code("\n".join(tile.generate_code(current_state, current_function,[]) for tile in self.tiles))
             result_str += "\n"
-            result_str += "    )\n"
+            result_str += ")\n"
             return result_str
 
 

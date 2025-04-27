@@ -1,9 +1,9 @@
 import copy
 import random
-from typing import Type
+from typing import Type, List
 
 from core.config.config import MAX_GLOBALS_PER_MODULE
-from core.state.functions import Function
+from core.state.functions import Function, Block
 from core.state.globals import Global
 from core.state.state import GlobalState
 from core.tile import AbstractTile, AbstractTileFactory
@@ -23,24 +23,24 @@ class AbstractGlobalFactory(AbstractTileFactory):
     def __init__(self, seed: int, tile_loader):
         super().__init__(seed, tile_loader)
 
-    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function) -> [Type[AbstractTile]]:
+    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> [Type[AbstractTile]]:
         for global_var in global_state.globals.globals:
             global_get_tile = self.create_global_get_tile(global_var.name)
-            if global_get_tile.can_be_placed(global_state, current_function):
+            if global_get_tile.can_be_placed(global_state, current_function,current_blocks):
                 yield global_get_tile
             global_set_tile = self.create_global_set_tile(global_var.name)
-            if global_set_tile.can_be_placed(global_state, current_function):
+            if global_set_tile.can_be_placed(global_state, current_function,current_blocks):
                 yield global_set_tile
 
         new_set_tile = self.create_global_set_tile(generate_random_global_name(global_state),
                                                    create_global=True)
-        if new_set_tile.can_be_placed(global_state, current_function):
+        if new_set_tile.can_be_placed(global_state, current_function, current_blocks):
             yield new_set_tile
 
         # Add random local type
         get_tile = self.create_global_get_tile(generate_random_global_name(global_state),
                                                create_global=True)
-        if get_tile.can_be_placed(global_state, current_function):
+        if get_tile.can_be_placed(global_state, current_function, current_blocks):
             yield get_tile
 
     def create_global_get_tile(self, global_name, create_global: bool = False):
@@ -57,14 +57,14 @@ class AbstractGlobalFactory(AbstractTileFactory):
                 self.last_value = None
 
             @staticmethod
-            def can_be_placed(current_state: GlobalState, current_function: Function):
+            def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if not current_state.stack.get_current_frame().can_push_to_stack():
                     return False
                 if create_global:
                     return MAX_GLOBALS_PER_MODULE > len(current_state.globals.globals)
                 return True
 
-            def apply(self, current_state: GlobalState, current_function):
+            def apply(self, current_state: GlobalState, current_function, current_blocks: List[Block]):
                 global_var = current_state.globals.get_global_by_name(self.global_name)
                 if not create_global and global_var is None:
                     raise ValueError("Global is not set and is not marked for being created")
@@ -78,7 +78,7 @@ class AbstractGlobalFactory(AbstractTileFactory):
                 self.last_value = copy.deepcopy(global_var.value)
                 current_state.stack.get_current_frame().stack_push(global_var.value)
 
-            def generate_code(self, current_state: GlobalState, current_function) -> str:
+            def generate_code(self, current_state: GlobalState, current_function, current_blocks: List[Block]) -> str:
                 return f"global.get ${self.global_name}"
 
             def get_byte_code_size(self):
@@ -101,7 +101,7 @@ class AbstractGlobalFactory(AbstractTileFactory):
                 self.last_value = None
 
             @staticmethod
-            def can_be_placed(current_state: GlobalState, current_function: Function):
+            def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if len(current_state.stack.get_current_frame().stack) < 1:
                     return False
                 if not create_global:
@@ -111,7 +111,7 @@ class AbstractGlobalFactory(AbstractTileFactory):
                 else:
                     return MAX_GLOBALS_PER_MODULE > len(current_state.globals.globals)
 
-            def apply(self, current_state: GlobalState, current_function: Function):
+            def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 global_var = current_state.globals.get_global_by_name(self.global_name)
                 if create_global and not global_var:
                     val = current_state.stack.get_current_frame().stack_pop()
@@ -130,7 +130,7 @@ class AbstractGlobalFactory(AbstractTileFactory):
                     current_state.globals.get_global_by_name(self.global_name).value = value
                 self.last_value = copy.deepcopy(global_var.value)
 
-            def generate_code(self, current_state: GlobalState, current_function) -> str:
+            def generate_code(self, current_state: GlobalState, current_function, current_blocks: List[Block]) -> str:
                 return f"global.set ${global_name}"
 
             def get_byte_code_size(self):

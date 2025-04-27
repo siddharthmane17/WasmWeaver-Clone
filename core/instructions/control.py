@@ -1,11 +1,12 @@
 import copy
 import random
 import uuid
-from typing import Type
+from typing import Type, List
 
 from core.config.config import MAX_FUNCTIONS_PER_MODULE, MAX_BLOCKS_PER_FUNCTION
 from core.constraints import FuelConstraint, ByteCodeSizeConstraint
-from core.state.functions import Function
+from core.formater import indent_code
+from core.state.functions import Function, Block
 from core.state.state import GlobalState
 from core.tile import AbstractTileFactory, AbstractTile
 from core.util import stack_matches, generate_function, generate_block
@@ -63,7 +64,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         tile.name = f"Create and call function ({name})"
         function = None
 
-        def can_be_placed(current_state: GlobalState, current_function: Function):
+        def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal function
             if not current_state.stack.can_add_new_stack_frame():
                 return False
@@ -73,9 +74,9 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                     FuelConstraint) >= 10 and current_state.constraints.remaining_resources(ByteCodeSizeConstraint) >= 10
 
             # Same from here as in call tile function
-            return self.create_function_call_tile(function).can_be_placed(current_state, current_function)
+            return self.create_function_call_tile(function).can_be_placed(current_state, current_function, current_blocks)
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal function
             if function is None:
                 forced_output_type_len = random.randint(0, 2)
@@ -100,9 +101,9 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                     name=name)
                 # Check for each tile if it can be placed and apply it
                 for tile in function.tiles:
-                    tile.apply(current_state, function)
+                    tile.apply(current_state, function,[])
                     # Check if the constraints are still satisfied
-                    tile.apply_constraints(current_state, function)
+                    tile.apply_constraints(current_state, function,[])
                     # Check if constraints are still satisfied
 
                 # Write back values on local stack frame to parent stack frame
@@ -113,7 +114,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                 # Remove the stack frame
                 current_state.stack.pop_frame()
 
-        def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+        def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
             return f"call ${name}"
 
         tile.apply = apply
@@ -126,7 +127,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         tile = type(f"FunctionCallTile", (AbstractTile,), {})
         tile.name = f"Call function ({function.name})"
 
-        def function_can_be_placed(current_state: GlobalState, current_function: Function):
+        def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             """Returns if the function can be placed in the current state"""
             # Check if new stack frame can be added
             if not current_state.stack.can_add_new_stack_frame():
@@ -148,12 +149,12 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                 name=function.name)
             # Check for each tile if it can be placed and apply it
             for tile in function.tiles:
-                if not type(tile).can_be_placed(current_state, function):
+                if not type(tile).can_be_placed(current_state, function,[]):
                     current_state.restore_checkpoint(backup_state, delete=True)
                     return False
-                tile.apply(current_state, function)
+                tile.apply(current_state, function,[])
                 # Check if the constraints are still satisfied
-                tile.apply_constraints(current_state, function)
+                tile.apply_constraints(current_state, function,[])
                 # Check if constraints are still satisfied
                 if current_state.constraints.any_violated():
                     current_state.restore_checkpoint(backup_state, delete=True)
@@ -166,16 +167,16 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
             current_state.restore_checkpoint(backup_state, delete=True)
             return True
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             # Add stack frame
             current_state.stack.push_frame(
                 params=current_state.stack.get_current_frame().stack_pop_n_in_order(len(function.inputs)),
                 name=function.name)
             # Check for each tile if it can be placed and apply it
             for tile in function.tiles:
-                tile.apply(current_state, function)
+                tile.apply(current_state, function,[])
                 # Check if the constraints are still satisfied
-                tile.apply_constraints(current_state, function)
+                tile.apply_constraints(current_state, function,[])
                 # Check if constraints are still satisfied
 
             #Write back values on local stack frame to parent stack frame
@@ -185,7 +186,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
             #Remove the stack frame
             current_state.stack.pop_frame()
 
-        def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+        def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
             return f"call ${function.name}"
 
         tile.apply = apply
@@ -202,7 +203,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         tile = type(f"FunctionIndirectCallTile", (AbstractTile,), {})
         tile.name = f"Indirect call function ({function.name})"
 
-        def function_can_be_placed(current_state: GlobalState, current_function: Function):
+        def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             """Returns if the function can be placed in the current state"""
             # Check if new stack frame can be added
             if not current_state.stack.can_add_new_stack_frame():
@@ -224,12 +225,12 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                 name=function.name)
             # Check for each tile if it can be placed and apply it
             for tile in function.tiles:
-                if not type(tile).can_be_placed(current_state, function):
+                if not type(tile).can_be_placed(current_state, function,[]):
                     current_state.restore_checkpoint(backup_state, delete=True)
                     return False
-                tile.apply(current_state, function)
+                tile.apply(current_state, function,[])
                 # Check if the constraints are still satisfied
-                tile.apply_constraints(current_state, function)
+                tile.apply_constraints(current_state, function,[])
                 # Check if constraints are still satisfied
                 if current_state.constraints.any_violated():
                     current_state.restore_checkpoint(backup_state, delete=True)
@@ -242,16 +243,16 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
             current_state.restore_checkpoint(backup_state, delete=True)
             return True
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             # Add stack frame
             current_state.stack.push_frame(
                 params=current_state.stack.get_current_frame().stack_pop_n_in_order(len(function.inputs)),
                 name=function.name)
             # Check for each tile if it can be placed and apply it
             for tile in function.tiles:
-                tile.apply(current_state, function)
+                tile.apply(current_state, function,[])
                 # Check if the constraints are still satisfied
-                tile.apply_constraints(current_state, function)
+                tile.apply_constraints(current_state, function, [])
                 # Check if constraints are still satisfied
 
             #Write back values on local stack frame to parent stack frame
@@ -261,7 +262,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
             #Remove the stack frame
             current_state.stack.pop_frame()
 
-        def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+        def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
             return f"indirect_call ${table_name} ${elem_index} ${function.get_sig_name()}"
 
         tile.apply = apply
@@ -277,12 +278,12 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         tile = type(f"FunctionRefToStackTile", (AbstractTile,), {})
         tile.name = f"Push reference function ({function.name}) to stack"
 
-        def function_can_be_placed(current_state: GlobalState, current_function: Function):
+        def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             """Returns if the function can be placed in the current state"""
 
             return current_state.stack.get_current_frame().can_push_to_stack()
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             current_state.stack.get_current_frame().stack_push(RefFunc(function))
 
         def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
@@ -294,19 +295,19 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         tile.generate_code = generate_code
         return tile
 
-    def generate_all_placeable_tiles(self, current_state: GlobalState, current_function: Function):
+    def generate_all_placeable_tiles(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Generates all function tiles that can be placed in the current state"""
         function_tiles = []
         start_state = copy.deepcopy(current_state)
         #Generate the tile
         for function in current_state.functions.functions.values():
 
-            if not self.create_function_call_tile(function).can_be_placed(current_state, current_function):
+            if not self.create_function_call_tile(function).can_be_placed(current_state, current_function, current_blocks):
                 continue
             function_tiles.append(self.create_function_call_tile(function))
         #Function reference to stack
         for function in current_state.functions.functions.values():
-            if not self.create_function_ref_to_stack_tile(function).can_be_placed(current_state, current_function):
+            if not self.create_function_ref_to_stack_tile(function).can_be_placed(current_state, current_function, current_blocks):
                 continue
             function_tiles.append(self.create_function_ref_to_stack_tile(function))
         #Function indirect call
@@ -316,13 +317,13 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
                     continue
                 function = elem.value
                 if not self.create_function_indirect_call_tile(function, table_name, elem_index).can_be_placed(
-                        current_state, current_function):
+                        current_state, current_function, current_blocks):
                     continue
                 function_tiles.append(
                     self.create_function_indirect_call_tile(function, table_name, elem_index))
         #Generate the create function tile
         create_function_tile = self.create_function_create_tile(current_state)
-        if create_function_tile.can_be_placed(current_state, current_function):
+        if create_function_tile.can_be_placed(current_state, current_function,current_blocks):
             function_tiles.append(create_function_tile)
         #Restore the state
         return function_tiles
@@ -333,11 +334,11 @@ class AbstractBlockTileFactory(AbstractTileFactory):
     def __init__(self, seed: int, tile_loader):
         super().__init__(seed, tile_loader)
 
-    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function):
+    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Generates all possible tiles"""
         block_tiles = []
         block_tile = self.create_block_tile(global_state)
-        if block_tile.can_be_placed(global_state, current_function):
+        if block_tile.can_be_placed(global_state, current_function, current_blocks):
             block_tiles.append(block_tile)
         return block_tiles
 
@@ -347,7 +348,7 @@ class AbstractBlockTileFactory(AbstractTileFactory):
         tile.name = f"A simple block"
         tile_loader = self.tile_loader
 
-        def can_be_placed(current_state: GlobalState, current_function: Function):
+        def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal tile
             if not current_state.stack.can_add_new_stack_frame():
                 return False
@@ -364,12 +365,12 @@ class AbstractBlockTileFactory(AbstractTileFactory):
             backup_state = current_state.create_checkpoint()
             function_backup = current_function.create_checkpoint()
             for block_tile in tile.block.tiles:
-                if not type(block_tile).can_be_placed(current_state, current_function):
+                if not type(block_tile).can_be_placed(current_state, current_function, current_blocks+[tile.block]):
                     current_state.restore_checkpoint(backup_state, delete=True)
                     current_function.restore_checkpoint(function_backup, delete=True)
                     return False
-                block_tile.apply(current_state, current_function)
-                block_tile.apply_constraints(current_state, current_function)
+                block_tile.apply(current_state, current_function, current_blocks+[tile.block])
+                block_tile.apply_constraints(current_state, current_function, current_blocks+[tile.block])
                 if current_state.constraints.any_violated():
                     current_state.restore_checkpoint(backup_state, delete=True)
                     current_function.restore_checkpoint(function_backup, delete=True)
@@ -379,7 +380,7 @@ class AbstractBlockTileFactory(AbstractTileFactory):
             current_function.restore_checkpoint(function_backup, delete=True)
             return True
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal tile, tile_loader
             if tile.block is None:
                 tile.name = generate_random_block_name(current_function)
@@ -390,15 +391,15 @@ class AbstractBlockTileFactory(AbstractTileFactory):
                                              current_state.stack.get_current_frame().stack_peek_n_in_order(
                                                  min(2, random.randint(0,
                                                                        len(current_state.stack.get_current_frame().stack))))],
-                                            tile.name, depth=0, fixed_output_types=forced_output_types)
+                                            tile.name, fixed_output_types=forced_output_types, blocks=current_blocks)
                 tile.generate_code = tile.block.generate_code
                 tile.get_byte_code_size = tile.block.get_byte_code_size
                 tile.get_fuel_cost = tile.block.get_fuel_cost
                 tile.get_response_time = tile.block.get_response_time
             else:
                 for block_tile in tile.block.tiles:
-                    block_tile.apply(current_state, current_function)
-                    block_tile.apply_constraints(current_state, current_function)
+                    block_tile.apply(current_state, current_function, current_blocks+[tile.block])
+                    block_tile.apply_constraints(current_state, current_function, current_blocks+[tile.block])
 
         tile.apply = apply
         tile.can_be_placed = staticmethod(can_be_placed)
@@ -410,11 +411,11 @@ class ConditionTileFactory(AbstractTileFactory):
     def __init__(self, seed: int, tile_loader):
         super().__init__(seed, tile_loader)
 
-    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function):
+    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Generates all possible tiles"""
         condition_tiles = []
         condition_tile = self.create_block_tile(global_state)
-        if condition_tile.can_be_placed(global_state, current_function):
+        if condition_tile.can_be_placed(global_state, current_function, current_blocks):
             condition_tiles.append(condition_tile)
         return condition_tiles
 
@@ -424,7 +425,7 @@ class ConditionTileFactory(AbstractTileFactory):
         tile.name = f"A simple condition block"
         tile_loader = self.tile_loader
 
-        def can_be_placed(current_state: GlobalState, current_function: Function):
+        def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal tile
             if not current_state.stack.can_add_new_stack_frame():
                 return False
@@ -453,12 +454,12 @@ class ConditionTileFactory(AbstractTileFactory):
             block = tile.if_block if current_state.stack.get_current_frame().stack_pop().value != 0 else tile.else_block
 
             for block_tile in block.tiles:
-                if not type(block_tile).can_be_placed(current_state, current_function):
+                if not type(block_tile).can_be_placed(current_state, current_function, current_blocks+[block]):
                     current_state.restore_checkpoint(backup_state, delete=True)
                     current_function.restore_checkpoint(function_backup, delete=True)
                     return False
-                block_tile.apply(current_state, current_function)
-                block_tile.apply_constraints(current_state, current_function)
+                block_tile.apply(current_state, current_function, current_blocks+[block])
+                block_tile.apply_constraints(current_state, current_function, current_blocks+[block])
                 if current_state.constraints.any_violated():
                     current_state.restore_checkpoint(backup_state, delete=True)
                     current_function.restore_checkpoint(function_backup, delete=True)
@@ -468,7 +469,7 @@ class ConditionTileFactory(AbstractTileFactory):
             current_function.restore_checkpoint(function_backup, delete=True)
             return True
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal tile, tile_loader
             should_execute_if = current_state.stack.get_current_frame().stack_pop().value != 0
 
@@ -496,7 +497,7 @@ class ConditionTileFactory(AbstractTileFactory):
                 #Generate else block first
                 tile.else_block = generate_block(tile_loader, global_state, current_function,
                                                  input_types,
-                                                 "else", depth=0, fixed_output_types=forced_output_types)
+                                                 "else", fixed_output_types=forced_output_types, blocks=current_blocks)
 
                 for global_var in current_state.globals.globals:
                     if global_var.name not in old_globals:
@@ -529,7 +530,7 @@ class ConditionTileFactory(AbstractTileFactory):
                 current_function.local_types = copy.deepcopy(required_local_types_else)
                 tile.if_block = generate_block(tile_loader, global_state, current_function,
                                                input_types,
-                                               "if", depth=0, fixed_output_types=forced_output_types)
+                                               "if", fixed_output_types=forced_output_types,blocks=current_blocks)
 
                 for global_var in current_state.globals.globals:
                     if global_var.name not in old_globals:
@@ -586,18 +587,16 @@ class ConditionTileFactory(AbstractTileFactory):
                         x: tile.if_block.get_byte_code_size() + tile.else_block.get_byte_code_size()
 
             block = tile.if_block if should_execute_if else tile.else_block
-            #print("Globals before block", [f"{var.name} {var.value}" for var in current_state.globals.globals])
             for block_tile in block.tiles:
-                #print(f"Globals before block {block_tile.name}", [f"{var.name} {var.value}" for var in current_state.globals.globals])
-                block_tile.apply(current_state, current_function)
-                block_tile.apply_constraints(current_state, current_function)
+                block_tile.apply(current_state, current_function, current_blocks+[block])
+                block_tile.apply_constraints(current_state, current_function, current_blocks+[block])
 
             tile.get_fuel_cost = lambda \
                     s: tile.if_block.get_fuel_cost() if should_execute_if else tile.else_block.get_fuel_cost()
             tile.get_response_time = lambda \
                     s: tile.if_block.get_response_time() if should_execute_if else tile.else_block.get_response_time()
-            tile.generate_code = lambda se, st, f: tile.if_block.generate_code(st, f) + tile.else_block.generate_code(
-                st, f)
+            tile.generate_code = lambda se, st, f, bs: tile.if_block.generate_code(st, f, bs) + tile.else_block.generate_code(
+                st, f, bs)
 
         tile.apply = apply
         tile.can_be_placed = staticmethod(can_be_placed)
@@ -609,11 +608,11 @@ class LoopTileFactory(AbstractTileFactory):
     def __init__(self, seed: int, tile_loader):
         super().__init__(seed, tile_loader)
 
-    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function):
+    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Generates all possible tiles"""
         condition_tiles = []
         condition_tile = self.create_loop_tile(global_state)
-        if condition_tile.can_be_placed(global_state, current_function):
+        if condition_tile.can_be_placed(global_state, current_function, current_blocks):
             condition_tiles.append(condition_tile)
         return condition_tiles
 
@@ -625,7 +624,7 @@ class LoopTileFactory(AbstractTileFactory):
         tile_loader = self.tile_loader
         tile.local_name = uuid.uuid4().hex
 
-        def can_be_placed(current_state: GlobalState, current_function: Function):
+        def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal tile
             if not current_state.stack.can_add_new_stack_frame():
                 return False
@@ -672,7 +671,7 @@ class LoopTileFactory(AbstractTileFactory):
             current_function.restore_checkpoint(function_backup, delete=True)
             return True
 
-        def apply(self, current_state: GlobalState, current_function: Function):
+        def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal tile, tile_loader
             repetition_count = current_state.stack.get_current_frame().stack_pop().value + 1 #Loop is always executed once
 
@@ -695,7 +694,7 @@ class LoopTileFactory(AbstractTileFactory):
 
                     tile.inner_block = generate_block(tile_loader, global_state, current_function,
                                                       [],
-                                                      "loop $" + name, depth=0, fixed_output_types=[])
+                                                      "loop $" + name, fixed_output_types=[], blocks=current_blocks)
 
                     #Restore the fuel constraint
                     current_state.constraints[FuelConstraint].resource = current_state.constraints[
@@ -705,11 +704,12 @@ class LoopTileFactory(AbstractTileFactory):
                     can_be_executed = True
                     for i in range(0, repetition_count):
                         for block_tile in tile.inner_block.tiles:
-                            if not type(block_tile).can_be_placed(current_state, current_function):
+                            if not type(block_tile).can_be_placed(current_state, current_function,
+                                                                  current_blocks+[tile.inner_block]):
                                 can_be_executed = False
                                 break
-                            block_tile.apply(current_state, current_function)
-                            block_tile.apply_constraints(current_state, current_function, ignore_byte_code_size=True)
+                            block_tile.apply(current_state, current_function, current_blocks+[tile.inner_block])
+                            block_tile.apply_constraints(current_state, current_function, current_blocks+[tile.inner_block], ignore_byte_code_size=True)
                             if current_state.constraints.any_violated():
                                 can_be_executed = False
                                 break
@@ -723,31 +723,32 @@ class LoopTileFactory(AbstractTileFactory):
             else:
                 for i in range(0, repetition_count):
                     for block_tile in tile.inner_block.tiles:
-                        block_tile.apply(current_state, current_function)
-                        block_tile.apply_constraints(current_state, current_function)
+                        block_tile.apply(current_state, current_function, current_blocks+[tile.inner_block])
+                        block_tile.apply_constraints(current_state, current_function, current_blocks+[tile.inner_block])
 
-            def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
-                result_str = "(loop $" + tile.loop_name + "\n (param i32)"
+            def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
+                result_str = "loop $" + tile.loop_name + " (param i32)"
                 # Add inputs
                 result_str += "\n".join(
-                    loop_tile.generate_code(current_state, current_function) for loop_tile in self.inner_block.tiles)
+                    loop_tile.generate_code(current_state, current_function, current_blocks+[self.inner_block]) for loop_tile in self.inner_block.tiles)
                 result_str += "\n"
-                result_str += f"i32.const 1\n"
-                result_str += f"i32.sub\n"
-                result_str += f"local.tee $temp\n"
-                result_str += f"local.get $temp\n"
-                result_str += f"i32.const 0\n"
-                result_str += f"i32.gt_s\n"
-                result_str += f"br_if $" + tile.loop_name + "\n"
-                result_str += "drop\n"
-                result_str += ")"
+                tail_code = ""
+                tail_code += f"i32.const 1\n"
+                tail_code += f"i32.sub\n"
+                tail_code += f"local.tee $temp\n"
+                tail_code += f"local.get $temp\n"
+                tail_code += f"i32.const 0\n"
+                tail_code += f"i32.gt_s\n"
+                tail_code += f"br_if $" + tile.loop_name + "\n"
+                tail_code += "drop"
+                tail_code = indent_code(tail_code)
+                result_str += tail_code
+                result_str += "\nend"
 
                 return result_str
 
-            tile.get_fuel_cost = lambda \
-                    s: (tile.inner_block.get_fuel_cost() + 8) * repetition_count
-            tile.get_response_time = lambda \
-                    s: tile.inner_block.get_response_time() * repetition_count
+            tile.get_fuel_cost = lambda s: (tile.inner_block.get_fuel_cost() + 8) * repetition_count
+            tile.get_response_time = lambda s: tile.inner_block.get_response_time() * repetition_count
             tile.generate_code = generate_code
 
         tile.apply = apply

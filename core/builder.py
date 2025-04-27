@@ -1,16 +1,18 @@
 import random
-from typing import Generator, Any
+from typing import Generator, Any, List, Type
 
 from config.config import MEMORY_MAX_WRITE_INDEX
 from core.constraints import ByteCodeSizeConstraint, FuelConstraint, ConstraintsViolatedError
-from core.converter import global_state_to_wasm_program
+from core.converter import global_state_to_wat_program
 from core.debug.debugger import generate_trace
+from core.formater import add_line_numbers_to_code
 from core.loader import TileLoader
 from core.runner import run_global_state, wat_code_to_wasm, AbstractRunResult
 from core.state.stack import StackOverflowError, StackValueError
 from core.state.state import GlobalState
-from core.strategy import AbstractSelectionStrategy, RandomSelectionStrategy
+from core.strategy import AbstractSelectionStrategy
 from core.util import generate_function
+from core.value import Val
 
 random.seed(0)
 tile_loader = TileLoader("core/instructions/")
@@ -38,16 +40,17 @@ class GeneratorResult:
             "canary_output": self.canary_output
         }
 
-def add_line_numbers_to_code(code_str: str) -> str:
-    """Adds line numbers to the code string"""
-    lines = code_str.split("\n")
-    for i in range(len(lines)):
-        lines[i] = f"{i + 1}: {lines[i]}"
-    return "\n".join(lines)
-
 def generate_code(start_seed: int, min_byte_code_size: int = 20, max_byte_code_size: int = 512, min_fuel: int = 0,
-                  max_fuel: int = 2000, verbose: bool = False, selection_strategy: AbstractSelectionStrategy = None) -> \
+                  max_fuel: int = 2000, verbose: bool = False, selection_strategy: AbstractSelectionStrategy = None,
+                  input_types: List[Type[Val]] = None, output_types: List[Type[Val]] = None) -> \
 Generator[GeneratorResult, Any, None]:
+
+    if input_types is None:
+        input_types = []
+
+    if output_types is None:
+        output_types = []
+
     while True:
         start_seed = start_seed + 1
         if verbose:
@@ -58,9 +61,9 @@ Generator[GeneratorResult, Any, None]:
             global_state.constraints.add(ByteCodeSizeConstraint(min_byte_code_size, max_byte_code_size))
             global_state.constraints.add(FuelConstraint(min_fuel, max_fuel))
             global_state.stack.push_frame(params=None, stack=[], name="origin")
-            generate_function(tile_loader, "run", [], False, global_state,
-                              is_entry=True, selection_strategy=selection_strategy,fixed_output_types=[])
-            code_str = global_state_to_wasm_program(global_state)
+            generate_function(tile_loader, "run", input_types, False, global_state,
+                              is_entry=True, selection_strategy=selection_strategy,fixed_output_types=output_types)
+            code_str = global_state_to_wat_program(global_state)
             if verbose:
                 print(code_str)
                 print(add_line_numbers_to_code(code_str))

@@ -1,6 +1,7 @@
+from typing import List
 
 from core.config.config import MEMORY_MAX_WRITE_INDEX
-from core.state.functions import Function
+from core.state.functions import Function, Block
 from core.state.state import GlobalState
 from core.tile import AbstractTile
 from core.value import I32, I64, F32, F64
@@ -26,14 +27,14 @@ class Int32Const(AbstractTile):
             self.value = np.int32(random.randint(-magnitude, magnitude - 1))
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         return current_state.stack.get_current_frame().can_push_to_stack()
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         current_state.stack.get_current_frame().stack_push(I32(self.value))
         return current_state
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return f"(i32.const {self.value})"
 
     def get_byte_code_size(self):
@@ -51,19 +52,19 @@ class Int32Add(AbstractTile):
     name = "Int32Add"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         a = current_state.stack.get_current_frame().stack_pop()
         b = current_state.stack.get_current_frame().stack_pop()
         current_state.stack.get_current_frame().stack_push(I32(a.value + b.value))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.add"
 
     def get_byte_code_size(self):
@@ -74,19 +75,19 @@ class Int32Sub(AbstractTile):
     name = "Int32Sub"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         current_state.stack.get_current_frame().stack_push(I32((a.value - b.value)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.sub"
 
     def get_byte_code_size(self):
@@ -97,19 +98,19 @@ class Int32Mul(AbstractTile):
     name = "Int32Mul"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         a = current_state.stack.get_current_frame().stack_pop()
         b = current_state.stack.get_current_frame().stack_pop()
         current_state.stack.get_current_frame().stack_push(I32((a.value * b.value) ))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.mul"
 
     def get_byte_code_size(self):
@@ -120,14 +121,14 @@ class Int32DivS(AbstractTile):
     name = "Int32DivS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32) and b.value != 0  # ensure b is not zero
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         if b.value == 0:
@@ -136,7 +137,7 @@ class Int32DivS(AbstractTile):
         result = np.int32(result)  # Round to nearest integer
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.div_s"
 
     def get_byte_code_size(self):
@@ -147,14 +148,14 @@ class Int32DivU(AbstractTile):
     name = "Int32DivU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32) and b.value != 0  # ensure b is not zero for division
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         if b.value == 0:
@@ -163,7 +164,7 @@ class Int32DivU(AbstractTile):
         result = (a.value.astype(np.uint32) // b.value.astype(np.uint32))
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.div_u"
 
     def get_byte_code_size(self):
@@ -174,14 +175,14 @@ class Int32RemS(AbstractTile):
     name = "Int32RemS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32) and b.value != 0  # ensure b is not zero for rem
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         if b.value == 0:
@@ -192,7 +193,7 @@ class Int32RemS(AbstractTile):
             result = result - b.value.astype(np.int32)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.rem_s"
 
     def get_byte_code_size(self):
@@ -203,14 +204,14 @@ class Int32RemU(AbstractTile):
     name = "Int32RemU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32) and b.value != 0  # ensure b is not zero
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         if b.value == 0:
@@ -219,7 +220,7 @@ class Int32RemU(AbstractTile):
         result = ((a.value.astype(np.uint32)) % (b.value.astype(np.uint32)))
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.rem_u"
 
     def get_byte_code_size(self):
@@ -230,7 +231,7 @@ class Int32And(AbstractTile):
     name = "Int32And"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         # Ensure there are at least two values on the stack
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
@@ -239,7 +240,7 @@ class Int32And(AbstractTile):
         # Check if both are I32 instances
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         # Pop the top two values from the stack
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
@@ -248,7 +249,7 @@ class Int32And(AbstractTile):
         # Push the result back to the stack
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.and"
 
     def get_byte_code_size(self):
@@ -259,20 +260,20 @@ class Int32Or(AbstractTile):
     name = "Int32Or"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         result = a.value | b.value  # Bitwise OR operation
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.or"
 
     def get_byte_code_size(self):
@@ -283,20 +284,20 @@ class Int32Xor(AbstractTile):
     name = "Int32Xor"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop()
         a = current_state.stack.get_current_frame().stack_pop()
         result = a.value ^ b.value  # Bitwise XOR operation
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.xor"
 
     def get_byte_code_size(self):
@@ -307,21 +308,21 @@ class Int32Shl(AbstractTile):
     name = "Int32Shl"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         shift_amount = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32) % 32
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         result = (value << shift_amount)  # Ensure 32-bit wrapping
         current_state.stack.get_current_frame().stack_push(I32(result))
         #print("Shifting", value, "left by", shift_amount, "result is", result)
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.shl"
 
     def get_byte_code_size(self):
@@ -332,20 +333,20 @@ class Int32ShrS(AbstractTile):
     name = "Int32ShrS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         shift_amount = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32) % 32
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         result = value >> shift_amount  # Python's `>>` performs an arithmetic shift for signed integers
         current_state.stack.get_current_frame().stack_push(I32(result.astype(np.int32)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.shr_s"
 
     def get_byte_code_size(self):
@@ -356,20 +357,20 @@ class Int32ShrU(AbstractTile):
     name = "Int32ShrU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         shift_amount = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32) % 32
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         result = value >> shift_amount  # Unsigned shift
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.shr_u"
 
     def get_byte_code_size(self):
@@ -380,14 +381,14 @@ class Int32Rotl(AbstractTile):
     name = "Int32Rotl"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         rotate_amount = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32) % 32
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Perform rotate left
@@ -399,7 +400,7 @@ class Int32Rotl(AbstractTile):
         #print("Rotating", value, "left by", rotate_amount, "result is", result)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.rotl"
 
     def get_byte_code_size(self):
@@ -410,14 +411,14 @@ class Int32Rotr(AbstractTile):
     name = "Int32Rotr"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         rotate_amount = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32) % 32
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Perform rotate right
@@ -429,7 +430,7 @@ class Int32Rotr(AbstractTile):
         #print("Rotating", value, "right by", rotate_amount, "result is", result)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.rotr"
 
     def get_byte_code_size(self):
@@ -440,13 +441,13 @@ class Int32Clz(AbstractTile):
     name = "Int32Clz"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         leading_zeros = 0
         for i in range(32):  # Iterate over each bit in a 32-bit integer
@@ -455,7 +456,7 @@ class Int32Clz(AbstractTile):
             leading_zeros += 1 # Use log2 to find the position of the highest set bit
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(leading_zeros)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.clz"
 
     def get_byte_code_size(self):
@@ -466,13 +467,13 @@ class Int32Ctz(AbstractTile):
     name = "Int32Ctz"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         if value == 0:
             result = 32  # If the value is zero, all bits are zero, hence 32 trailing zeros
@@ -483,7 +484,7 @@ class Int32Ctz(AbstractTile):
                 value >>= 1  # Right shift the value until a 1 is found
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.ctz"
 
     def get_byte_code_size(self):
@@ -494,19 +495,19 @@ class Int32Popcnt(AbstractTile):
     name = "Int32Popcnt"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Count the number of 1s in the binary representation of the value
         result = bin(value & 0xFFFFFFFF).count('1')
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.popcnt"
 
     def get_byte_code_size(self):
@@ -517,19 +518,19 @@ class Int32Eqz(AbstractTile):
     name = "Int32Eqz"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if the value is zero and return 1 if true, else 0
         result = 1 if value == 0 else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.eqz"
 
     def get_byte_code_size(self):
@@ -540,21 +541,21 @@ class Int32Eq(AbstractTile):
     name = "Int32Eq"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if the two values are equal and return 1 if true, else 0
         result = 1 if a == b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.eq"
 
     def get_byte_code_size(self):
@@ -565,21 +566,21 @@ class Int32Ne(AbstractTile):
     name = "Int32Ne"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         a = current_state.stack.get_current_frame().stack_peek(2)
         b = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if the two values are not equal and return 1 if true, else 0
         result = 1 if a != b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.ne"
 
     def get_byte_code_size(self):
@@ -590,21 +591,21 @@ class Int32LtS(AbstractTile):
     name = "Int32LtS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         # Check if a is less than b and return 1 if true, else 0
         result = 1 if a < b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.lt_s"
 
     def get_byte_code_size(self):
@@ -615,21 +616,21 @@ class Int32LtU(AbstractTile):
     name = "Int32LtU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if a is less than b and return 1 if true, else 0
         result = 1 if a < b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.lt_u"
 
     def get_byte_code_size(self):
@@ -640,21 +641,21 @@ class Int32LeS(AbstractTile):
     name = "Int32LeS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         # Check if a is less than or equal to b and return 1 if true, else 0
         result = 1 if a <= b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.le_s"
 
     def get_byte_code_size(self):
@@ -665,21 +666,21 @@ class Int32LeU(AbstractTile):
     name = "Int32LeU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if a is less than or equal to b and return 1 if true, else 0
         result = 1 if a <= b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.le_u"
 
     def get_byte_code_size(self):
@@ -690,21 +691,21 @@ class Int32GtS(AbstractTile):
     name = "Int32GtS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         # Check if a is greater than b and return 1 if true, else 0
         result = 1 if a > b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.gt_s"
 
     def get_byte_code_size(self):
@@ -715,21 +716,21 @@ class Int32GtU(AbstractTile):
     name = "Int32GtU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if a is greater than b and return 1 if true, else 0
         result = 1 if a > b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.gt_u"
 
     def get_byte_code_size(self):
@@ -740,21 +741,21 @@ class Int32GeS(AbstractTile):
     name = "Int32GeS"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         # Check if a is greater than or equal to b and return 1 if true, else 0
         result = 1 if a >= b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.ge_s"
 
     def get_byte_code_size(self):
@@ -765,21 +766,21 @@ class Int32GeU(AbstractTile):
     name = "Int32GeU"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         b = current_state.stack.get_current_frame().stack_peek(1)
         a = current_state.stack.get_current_frame().stack_peek(2)
         return isinstance(a, I32) and isinstance(b, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         b = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         a = current_state.stack.get_current_frame().stack_pop().value.astype(np.uint32)
         # Check if a is greater than or equal to b and return 1 if true, else 0
         result = 1 if a >= b else 0
         current_state.stack.get_current_frame().stack_push(I32(np.uint32(result)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.ge_u"
 
     def get_byte_code_size(self):
@@ -790,19 +791,19 @@ class Int32WrapI64(AbstractTile):
     name = "Int32WrapI64"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I64)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.int64)
         # Wrap the 64-bit integer to a 32-bit integer with modulo 2**32
         result = np.int32(value)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.wrap_i64"
 
     def get_byte_code_size(self):
@@ -813,7 +814,7 @@ class Int32TruncF32S(AbstractTile):
     name = "Int32TruncF32S"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
@@ -825,13 +826,13 @@ class Int32TruncF32S(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.float32)
         # Truncate the 32-bit float to a 32-bit integer
         result = np.int32(value)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.trunc_f32_s"
 
     def get_byte_code_size(self):
@@ -842,7 +843,7 @@ class Int32TruncF64S(AbstractTile):
     name = "Int32TruncF64S"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
@@ -854,13 +855,13 @@ class Int32TruncF64S(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.float64)
         # Truncate the 64-bit float to a 32-bit integer
         result = np.int32(value)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.trunc_f64_s"
 
     def get_byte_code_size(self):
@@ -871,7 +872,7 @@ class Int32TruncF32U(AbstractTile):
     name = "Int32TruncF32U"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
@@ -883,13 +884,13 @@ class Int32TruncF32U(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.float32)
         # Truncate the 32-bit float to a 32-bit unsigned integer
         result = np.uint32(value)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.trunc_f32_u"
 
     def get_byte_code_size(self):
@@ -900,7 +901,7 @@ class Int32TruncF64U(AbstractTile):
     name = "Int32TruncF64U"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
@@ -912,7 +913,7 @@ class Int32TruncF64U(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.float64)
         # Truncate the 64-bit float to a 32-bit unsigned integer
         # print("Truncating", value)
@@ -920,7 +921,7 @@ class Int32TruncF64U(AbstractTile):
         result = np.uint32(value)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.trunc_f64_u"
 
     def get_byte_code_size(self):
@@ -932,20 +933,20 @@ class Int32ReinterpretF32(AbstractTile):
     name = "Int32ReinterpretF32"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, F32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.float32)
         # Reinterpret the 32-bit float as a 32-bit integer with 1:1 bit pattern
         result = value.view(np.int32)
         #print("Reinterpreting", value, "as", result)
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.reinterpret_f32"
 
     def get_byte_code_size(self):
@@ -956,19 +957,19 @@ class Int32Extend8S(AbstractTile):
     name = "Int32Extend8S"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         # Sign-extend the 8-bit integer to a 32-bit integer
         result = np.int32(np.int8(value))
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.extend8_s"
 
     def get_byte_code_size(self):
@@ -979,19 +980,19 @@ class Int32Extend16S(AbstractTile):
     name = "Int32Extend16S"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         a = current_state.stack.get_current_frame().stack_peek(1)
         return isinstance(a, I32)
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop().value.astype(np.int32)
         # Sign-extend the 16-bit integer to a 32-bit integer
         result = np.int32(np.int16(value))
         current_state.stack.get_current_frame().stack_push(I32(result))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.extend16_s"
 
     def get_byte_code_size(self):
@@ -1005,7 +1006,7 @@ class Int32Store(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(2)
@@ -1019,12 +1020,12 @@ class Int32Store(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop()
         offset = current_state.stack.get_current_frame().stack_pop()
         current_state.memory.i32_store(offset.value.astype(np.uint32), value.value.astype(np.uint32))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return f"i32.store"
 
     def get_byte_code_size(self):
@@ -1039,7 +1040,7 @@ class Int32Store8(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(2)
@@ -1051,13 +1052,13 @@ class Int32Store8(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop()
         offset = current_state.stack.get_current_frame().stack_pop()
         # Store only the least significant 8 bits of the integer
         current_state.memory.i32_store8(offset.value.astype(np.uint32), value.value.astype(np.uint32) & 0xFF)
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return f"i32.store8"
 
     def get_byte_code_size(self):
@@ -1072,7 +1073,7 @@ class Int32Store16(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 2:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(2)
@@ -1084,13 +1085,13 @@ class Int32Store16(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         value = current_state.stack.get_current_frame().stack_pop()
         offset = current_state.stack.get_current_frame().stack_pop()
         # Store only the least significant 16 bits of the integer
         current_state.memory.i32_store16(offset.value.astype(np.uint32), value.value.astype(np.uint32) & 0xFFFF)
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return f"i32.store16"
 
     def get_byte_code_size(self):
@@ -1105,7 +1106,7 @@ class Int32Load(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(1)
@@ -1116,12 +1117,12 @@ class Int32Load(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         offset = current_state.stack.get_current_frame().stack_pop()
         value = current_state.memory.i32_load(offset.value.astype(np.uint32))
         current_state.stack.get_current_frame().stack_push(I32(value))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return f"i32.load"
 
     def get_byte_code_size(self):
@@ -1136,7 +1137,7 @@ class Int32Load8U(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(1)
@@ -1147,12 +1148,12 @@ class Int32Load8U(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         offset = current_state.stack.get_current_frame().stack_pop()
         value = current_state.memory.i32_load8_u(offset.value.astype(np.uint32))
         current_state.stack.get_current_frame().stack_push(I32(value))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.load8_u"
 
     def get_byte_code_size(self):
@@ -1166,7 +1167,7 @@ class Int32Load8S(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(1)
@@ -1177,12 +1178,12 @@ class Int32Load8S(AbstractTile):
         #print(offset.value)
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         offset = current_state.stack.get_current_frame().stack_pop()
         value = current_state.memory.i32_load8_s(offset.value.astype(np.uint32))
         current_state.stack.get_current_frame().stack_push(I32(value))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.load8_s"
 
     def get_byte_code_size(self):
@@ -1197,7 +1198,7 @@ class Int32Load16U(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(1)
@@ -1207,12 +1208,12 @@ class Int32Load16U(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         offset = current_state.stack.get_current_frame().stack_pop()
         value = current_state.memory.i32_load16_u(offset.value.astype(np.uint32))
         current_state.stack.get_current_frame().stack_push(I32(value))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.load16_u"
 
     def get_byte_code_size(self):
@@ -1226,7 +1227,7 @@ class Int32Load16S(AbstractTile):
         super().__init__(seed)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         offset = current_state.stack.get_current_frame().stack_peek(1)
@@ -1238,14 +1239,14 @@ class Int32Load16S(AbstractTile):
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
 
         offset = current_state.stack.get_current_frame().stack_pop()
         #print("t: ", offset.value.astype(np.uint32))
         value = current_state.memory.i32_load16_s(offset.value.astype(np.uint32))
         current_state.stack.get_current_frame().stack_push(I32(value))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return "i32.load16_s"
 
     def get_byte_code_size(self):

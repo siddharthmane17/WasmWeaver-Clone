@@ -43,8 +43,8 @@ def _generate_signatures(global_state: GlobalState) -> str:
     return signature_str
 
 
-def global_state_to_wasm_program(global_state: GlobalState) -> str:
-    """Converts a global state to a wasm program"""
+def global_state_to_wat_program(global_state: GlobalState) -> str:
+    """Converts a global state to a wat program"""
     template = f"(module\n"
     #Signatures
     if _generate_signatures(global_state):

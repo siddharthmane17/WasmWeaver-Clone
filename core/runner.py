@@ -3,7 +3,7 @@ from typing import List
 
 from wasmtime import Config, Engine, Store, Module, Func, FuncType, Instance, Memory, MemoryType, Limits, wat2wasm
 from core.config.config import MEMORY_MAX_WRITE_INDEX
-from core.converter import global_state_to_wasm_program
+from core.converter import global_state_to_wat_program
 from core.state.state import GlobalState
 
 
@@ -28,13 +28,14 @@ class AbstractRunResult:
     def __init__(self, fuel: int, ext_resources: List[ExternalComputeResource]):
         self.fuel = fuel
         self.ext_resources = ext_resources
+        self.return_values = []
 
 
 def run_global_state(global_state: GlobalState,
                      start_function: str = "run", sanity_check: bool = True) -> AbstractRunResult:
     """Runs the given global state and returns the metric. The metric can be fuel, energy or response time. If sanity
     check is true, the memory output is compared to the expected memory output."""
-    wasm_code = global_state_to_wasm_program(global_state)
+    wasm_code = global_state_to_wat_program(global_state)
     result = AbstractRunResult(0, [])
     config = Config()
     config.consume_fuel = True
@@ -69,8 +70,8 @@ def run_global_state(global_state: GlobalState,
     total_fuel = 2_000_000_000
     store.set_fuel(total_fuel)  #Some arbitrary large number
     run = instance.exports(store)[start_function]
-    run(store)
-
+    return_values = run(store)
+    result.return_values = return_values
     if sanity_check:
         #print("Running memory sanity check")
         expected_memory_output = global_state.memory.memory

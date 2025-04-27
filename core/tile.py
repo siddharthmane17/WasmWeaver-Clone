@@ -1,7 +1,7 @@
-from typing import Type
+from typing import Type, List
 
 from core.constraints import ResponseTimeConstraint, FuelConstraint, ByteCodeSizeConstraint
-from core.state.functions import Function
+from core.state.functions import Function, Block
 from core.state.state import GlobalState
 from core.strategy import AbstractSelectionStrategy
 
@@ -35,19 +35,19 @@ class AbstractTile(metaclass=ApplyMeta):
         self.byte_code_size = 1
 
     @classmethod
-    def get_weight(cls,current_state: GlobalState, current_function: Function, selection_strategy: AbstractSelectionStrategy):
-        return selection_strategy.get_weight(cls, current_state, current_function)
+    def get_weight(cls,current_state: GlobalState, current_function: Function, current_blocks: List[Block], selection_strategy: AbstractSelectionStrategy):
+        return selection_strategy.get_weight(cls, current_state, current_function, current_blocks)
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Returns if the tile can be placed in the current state"""
         raise NotImplementedError
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Applies the tile to the current state"""
         raise NotImplementedError
 
-    def apply_constraints(self, current_state: GlobalState, current_function: Function, ignore_byte_code_size=False):
+    def apply_constraints(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block], ignore_byte_code_size=False):
         """Applies the constraints of the tile to the current state"""
         constraints = current_state.constraints
         for constraint in constraints.constraints:
@@ -59,7 +59,7 @@ class AbstractTile(metaclass=ApplyMeta):
                 constraint.update_resource(self.get_response_time())
         return current_state
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         """Returns the code that the tile represents"""
         raise NotImplementedError
 
@@ -84,6 +84,6 @@ class AbstractTileFactory:
         self.seed = seed
         self.tile_loader = tile_loader
 
-    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function) -> [Type[AbstractTile]]:
+    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> [Type[AbstractTile]]:
         """Generates all possible tiles"""
         raise NotImplementedError

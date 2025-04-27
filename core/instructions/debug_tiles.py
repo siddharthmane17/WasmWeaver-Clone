@@ -1,6 +1,8 @@
+from typing import List
+
 import numpy as np
 
-from core.state.functions import Function
+from core.state.functions import Function, Block
 from core.state.state import GlobalState
 from core.tile import AbstractTile
 from core.value import I32, I64, F32, F64
@@ -10,12 +12,12 @@ class Canary(AbstractTile):
     name = "Canary"
 
     @staticmethod
-    def can_be_placed(current_state: GlobalState, current_function: Function):
+    def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         if len(current_state.stack.get_current_frame().stack) < 1:
             return False
         return True
 
-    def apply(self, current_state: GlobalState, current_function: Function):
+    def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         n = current_state.stack.get_current_frame().stack_peek()
         print("Canary:", n)
         if isinstance(n, I32):
@@ -27,7 +29,7 @@ class Canary(AbstractTile):
         elif isinstance(n, F64):
             current_state.canary_output.append(float(np.float64(n.value)))
 
-    def generate_code(self, current_state: GlobalState, current_function: Function) -> str:
+    def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
         return ""
 
     def get_byte_code_size(self):

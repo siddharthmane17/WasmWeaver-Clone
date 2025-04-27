@@ -1,13 +1,13 @@
 import copy
 import random
-from typing import Type
+from typing import Type, List
 
-from core.config.config import MAX_GLOBALS_PER_MODULE, MAX_TABLE_SIZE, MAX_TABLES_PER_MODULE
-from core.state.functions import Function
+from core.config.config import MAX_TABLE_SIZE, MAX_TABLES_PER_MODULE
+from core.state.functions import Function, Block
 from core.state.state import GlobalState
 from core.state.tables import Table
 from core.tile import AbstractTile, AbstractTileFactory
-from core.value import get_random_random_val, I32, RefFunc, Ref
+from core.value import I32, RefFunc
 
 
 def generate_random_table_name(global_state: GlobalState) -> str:
@@ -23,24 +23,24 @@ class AbstractTableFactory(AbstractTileFactory):
     def __init__(self, seed: int, tile_loader):
         super().__init__(seed, tile_loader)
 
-    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function) -> [
+    def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> [
         Type[AbstractTile]]:
         for table in global_state.tables.tables.values():
             table_get_tile = self.create_table_get_tile(table.name)
-            if table_get_tile.can_be_placed(global_state, current_function):
+            if table_get_tile.can_be_placed(global_state, current_function, current_blocks):
                 yield table_get_tile
             table_set_tile = self.create_table_set_tile(table.name)
-            if table_set_tile.can_be_placed(global_state, current_function):
+            if table_set_tile.can_be_placed(global_state, current_function, current_blocks):
                 yield table_set_tile
 
         new_set_tile = self.create_table_set_tile(generate_random_table_name(global_state),
                                                   create_table=True)
-        if new_set_tile.can_be_placed(global_state, current_function):
+        if new_set_tile.can_be_placed(global_state, current_function, current_blocks):
             yield new_set_tile
         #Currently disabled to not flood the stack with null ref
         new_get_tile = self.create_table_get_tile(generate_random_table_name(global_state),
                                                     create_table=True)
-        if new_get_tile.can_be_placed(global_state, current_function):
+        if new_get_tile.can_be_placed(global_state, current_function, current_blocks):
             yield new_get_tile
 
     def create_table_get_tile(self, table_name: str, create_table: bool = False):
@@ -58,7 +58,7 @@ class AbstractTableFactory(AbstractTileFactory):
                 self.last_value = None
 
             @staticmethod
-            def can_be_placed(current_state: GlobalState, current_function: Function):
+            def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if not create_table:
                     TableGet.table_size = current_state.tables.tables[table_name].size
                 #Check if last value is a valid index
@@ -73,7 +73,7 @@ class AbstractTableFactory(AbstractTileFactory):
                     return MAX_TABLES_PER_MODULE > len(current_state.tables.tables)
                 return True
 
-            def apply(self, current_state: GlobalState, current_function):
+            def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if create_table:
                     table = Table(self.table_name, RefFunc, self.table_size)
                     current_state.tables.set(table)
@@ -82,7 +82,7 @@ class AbstractTableFactory(AbstractTileFactory):
                 self.last_value = copy.deepcopy(table.elements[index])
                 current_state.stack.get_current_frame().stack_push(table.elements[index])
 
-            def generate_code(self, current_state: GlobalState, current_function) -> str:
+            def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
                 return f"table.get ${self.table_name}"
 
             def get_byte_code_size(self):
@@ -106,7 +106,7 @@ class AbstractTableFactory(AbstractTileFactory):
                 self.last_value = None
 
             @staticmethod
-            def can_be_placed(current_state: GlobalState, current_function: Function):
+            def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if not create_table:
                     TableSet.table_size = current_state.tables.tables[table_name].size
 
@@ -123,7 +123,7 @@ class AbstractTableFactory(AbstractTileFactory):
                     return MAX_TABLES_PER_MODULE > len(current_state.tables.tables)
                 return True
 
-            def apply(self, current_state: GlobalState, current_function: Function):
+            def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if create_table:
                     table = Table(table_name, RefFunc, self.table_size)
                     current_state.tables.set(table)
@@ -134,7 +134,7 @@ class AbstractTableFactory(AbstractTileFactory):
                 table.elements[index] = value
                 self.last_value = copy.deepcopy(value)
 
-            def generate_code(self, current_state: GlobalState, current_function) -> str:
+            def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
                 return f"table.set ${table_name}"
 
             def get_byte_code_size(self):
