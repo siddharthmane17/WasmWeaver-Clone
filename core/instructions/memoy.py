@@ -7,7 +7,7 @@ from core.value import I32
 
 
 #class MemorySize(AbstractTile):
-#    name = "MemorySize"
+#    name = "Memory size"
 
 #    def __init__(self, seed: int):
 #        super().__init__(seed)

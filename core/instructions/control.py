@@ -61,7 +61,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         name = generate_random_function_name(global_state)
         tile_loader = self.tile_loader
         tile = type(f"CreateFunctionTile", (AbstractTile,), {})
-        tile.name = f"Create and call function ({name})"
+        tile.name = f"Create and call function"
         function = None
 
         def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -125,7 +125,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
     def create_function_call_tile(self, function: Function) -> Type[AbstractTile]:
         """Returns a tile that represents the function"""
         tile = type(f"FunctionCallTile", (AbstractTile,), {})
-        tile.name = f"Call function ({function.name})"
+        tile.name = f"Call function"
 
         def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             """Returns if the function can be placed in the current state"""
@@ -201,7 +201,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
     def create_function_indirect_call_tile(self, function: Function, table_name: str, elem_index: int) -> Type[AbstractTile]:
         """Returns a tile that represents the function"""
         tile = type(f"FunctionIndirectCallTile", (AbstractTile,), {})
-        tile.name = f"Indirect call function ({function.name})"
+        tile.name = f"Indirect call function"
 
         def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             """Returns if the function can be placed in the current state"""
@@ -276,7 +276,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
     def create_function_ref_to_stack_tile(self, function: Function) -> Type[AbstractTile]:
         """Returns a tile that represents the function"""
         tile = type(f"FunctionRefToStackTile", (AbstractTile,), {})
-        tile.name = f"Push reference function ({function.name}) to stack"
+        tile.name = f"Push function reference to stack"
 
         def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             """Returns if the function can be placed in the current state"""
@@ -345,7 +345,7 @@ class AbstractBlockTileFactory(AbstractTileFactory):
     def create_block_tile(self, global_state: GlobalState) -> Type[AbstractTile]:
 
         tile = type(f"BlockTile", (AbstractTile,), {"block": None})
-        tile.name = f"A simple block"
+        tile.name = f"Create block"
         tile_loader = self.tile_loader
 
         def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -422,7 +422,7 @@ class ConditionTileFactory(AbstractTileFactory):
     def create_block_tile(self, global_state: GlobalState) -> Type[AbstractTile]:
 
         tile = type(f"ConditionTile", (AbstractTile,), {"if_block": None, "else_block": None})
-        tile.name = f"A simple condition block"
+        tile.name = f"Create condition"
         tile_loader = self.tile_loader
 
         def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -619,7 +619,7 @@ class LoopTileFactory(AbstractTileFactory):
     def create_loop_tile(self, global_state: GlobalState) -> Type[AbstractTile]:
 
         tile = type(f"LoopTile", (AbstractTile,), {"inner_block": None})
-        tile.name = f"A simple loop block"
+        tile.name = f"Create unbounded loop"
         tile.loop_name = None
         tile_loader = self.tile_loader
         tile.local_name = uuid.uuid4().hex

@@ -39,7 +39,7 @@ class AbstractLocalFactory(AbstractTileFactory):
     def create_local_get_tile(self, index, create_local: bool = False):
 
         class LocalGet(AbstractTile):
-            name = f"LocalGet {index}"
+            name = f"Get local"
 
             def __init__(self, seed: int):
                 super().__init__(seed)
@@ -92,7 +92,7 @@ class AbstractLocalFactory(AbstractTileFactory):
         """Used for creating local set tiles"""
 
         class LocalTeeSet(AbstractTile):
-            name = f"Local{'Set' if not is_tee else 'Tee'} {index}"
+            name = f"{'Set' if not is_tee else 'Tee'} local"
 
             def __init__(self, seed: int):
 

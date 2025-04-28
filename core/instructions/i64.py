@@ -11,7 +11,7 @@ import numpy as np
 
 
 class Int64Const(AbstractTile):
-    name = "Int64Const"
+    name = "I64Const"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -58,9 +58,8 @@ class Int64Const(AbstractTile):
         else:
             return 10  # Full 64 bits (or more, sign-extended), hence 10 bytes (including opcode)
 
-
 class Int64Add(AbstractTile):
-    name = "Int64Add"
+    name = "I64Add"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -81,9 +80,8 @@ class Int64Add(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Sub(AbstractTile):
-    name = "Int64Sub"
+    name = "I64Sub"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -106,9 +104,8 @@ class Int64Sub(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Mul(AbstractTile):
-    name = "Int64Mul"
+    name = "I64Mul"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -129,9 +126,8 @@ class Int64Mul(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64DivS(AbstractTile):
-    name = "Int64DivS"
+    name = "I64DivS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -158,9 +154,8 @@ class Int64DivS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64DivU(AbstractTile):
-    name = "Int64DivU"
+    name = "I64DivU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -185,9 +180,8 @@ class Int64DivU(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64RemS(AbstractTile):
-    name = "Int64RemS"
+    name = "I64RemS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -214,9 +208,8 @@ class Int64RemS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64RemU(AbstractTile):
-    name = "Int64RemU"
+    name = "I64RemU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -246,9 +239,8 @@ class Int64RemU(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64And(AbstractTile):
-    name = "Int64And"
+    name = "I64And"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -275,9 +267,8 @@ class Int64And(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Or(AbstractTile):
-    name = "Int64Or"
+    name = "I64Or"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -299,9 +290,8 @@ class Int64Or(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Xor(AbstractTile):
-    name = "Int64Xor"
+    name = "I64Xor"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -323,9 +313,8 @@ class Int64Xor(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Shl(AbstractTile):
-    name = "Int64Shl"
+    name = "I64Shl"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -349,9 +338,8 @@ class Int64Shl(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64ShrS(AbstractTile):
-    name = "Int64ShrS"
+    name = "I64ShrS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -374,9 +362,8 @@ class Int64ShrS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64ShrU(AbstractTile):
-    name = "Int64ShrU"
+    name = "I64ShrU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -398,9 +385,8 @@ class Int64ShrU(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Rotl(AbstractTile):
-    name = "Int64Rotl"
+    name = "I64Rotl"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -429,9 +415,8 @@ class Int64Rotl(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Rotr(AbstractTile):
-    name = "Int64Rotr"
+    name = "I64Rotr"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -459,9 +444,8 @@ class Int64Rotr(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Clz(AbstractTile):
-    name = "Int64Clz"
+    name = "I64Clz"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -486,9 +470,8 @@ class Int64Clz(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Ctz(AbstractTile):
-    name = "Int64Ctz"
+    name = "I64Ctz"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -515,9 +498,8 @@ class Int64Ctz(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Popcnt(AbstractTile):
-    name = "Int64Popcnt"
+    name = "I64Popcnt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -538,9 +520,8 @@ class Int64Popcnt(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Eqz(AbstractTile):
-    name = "Int64Eqz"
+    name = "I64Eqz"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -561,9 +542,8 @@ class Int64Eqz(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Eq(AbstractTile):
-    name = "Int64Eq"
+    name = "I64Eq"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -586,9 +566,8 @@ class Int64Eq(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Ne(AbstractTile):
-    name = "Int64Ne"
+    name = "I64Ne"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -611,9 +590,8 @@ class Int64Ne(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64LtS(AbstractTile):
-    name = "Int64LtS"
+    name = "I64LtS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -636,9 +614,8 @@ class Int64LtS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64LtU(AbstractTile):
-    name = "Int64LtU"
+    name = "I64LtU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -661,9 +638,8 @@ class Int64LtU(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64LeS(AbstractTile):
-    name = "Int64LeS"
+    name = "I64LeS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -686,9 +662,8 @@ class Int64LeS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64LeU(AbstractTile):
-    name = "Int64LeU"
+    name = "I64LeU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -711,9 +686,8 @@ class Int64LeU(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64GtS(AbstractTile):
-    name = "Int64GtS"
+    name = "I64GtS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -736,9 +710,8 @@ class Int64GtS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64GtU(AbstractTile):
-    name = "Int64GtU"
+    name = "I64GtU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -760,7 +733,6 @@ class Int64GtU(AbstractTile):
 
     def get_byte_code_size(self):
         return 1
-
 
 class Int64GeS(AbstractTile):
     name = "Int64GeS"
@@ -786,9 +758,8 @@ class Int64GeS(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64GeU(AbstractTile):
-    name = "Int64GeU"
+    name = "I64GeU"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -811,9 +782,8 @@ class Int64GeU(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64ExtendI32S(AbstractTile):
-    name = "Int64ExtendI32S"
+    name = "I64ExtendI32S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -834,9 +804,8 @@ class Int64ExtendI32S(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64ExtendI32U(AbstractTile):
-    name = "Int64ExtendI32U"
+    name = "I64ExtendI32U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -857,9 +826,8 @@ class Int64ExtendI32U(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64TruncF32S(AbstractTile):
-    name = "Int64TruncF32S"
+    name = "I64TruncF32S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -886,9 +854,8 @@ class Int64TruncF32S(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64TruncF64S(AbstractTile):
-    name = "Int64TruncF64S"
+    name = "I64TruncF64S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -915,9 +882,8 @@ class Int64TruncF64S(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64TruncF32U(AbstractTile):
-    name = "Int64TruncF32U"
+    name = "I64TruncF32U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -944,9 +910,8 @@ class Int64TruncF32U(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64TruncF64U(AbstractTile):
-    name = "Int64TruncF64U"
+    name = "I64TruncF64U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -973,7 +938,6 @@ class Int64TruncF64U(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64ReinterpretF64(AbstractTile):
     name = "Int64ReinterpretF64"
 
@@ -995,7 +959,6 @@ class Int64ReinterpretF64(AbstractTile):
 
     def get_byte_code_size(self):
         return 1
-
 
 class Int64Extend8S(AbstractTile):
     name = "Int64Extend8S"
@@ -1042,7 +1005,6 @@ class Int64Extend16S(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Extend32S(AbstractTile):
     name = "Int64Extend32S"
 
@@ -1065,9 +1027,8 @@ class Int64Extend32S(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Int64Store(AbstractTile):
-    name = "Int64Store"
+    name = "I64Store"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1098,9 +1059,8 @@ class Int64Store(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
 class Int64Store8(AbstractTile):
-    name = "Int64Store8"
+    name = "I64Store8"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1130,10 +1090,8 @@ class Int64Store8(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Store16(AbstractTile):
-    name = "Int64Store16"
+    name = "I64Store16"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1163,10 +1121,8 @@ class Int64Store16(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Store32(AbstractTile):
-    name = "Int64Store32"
+    name = "I64Store32"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1195,7 +1151,6 @@ class Int64Store32(AbstractTile):
 
     def get_byte_code_size(self):
         return 2
-
 
 class Int64Load(AbstractTile):
     name = "Int64Load"
@@ -1226,10 +1181,8 @@ class Int64Load(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Load8U(AbstractTile):
-    name = "Int64Load8U"
+    name = "I64Load8U"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1258,10 +1211,8 @@ class Int64Load8U(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Load8S(AbstractTile):
-    name = "Int32Load8S"
+    name = "I64Load8S"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1289,10 +1240,8 @@ class Int64Load8S(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Load16U(AbstractTile):
-    name = "Int64Load16U"
+    name = "I64Load16U"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1319,10 +1268,8 @@ class Int64Load16U(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int32Load16S(AbstractTile):
-    name = "Int64Load16S"
+    name = "I64Load16S"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1352,10 +1299,8 @@ class Int32Load16S(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Load32U(AbstractTile):
-    name = "Int64Load32U"
+    name = "I64Load32U"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -1382,10 +1327,8 @@ class Int64Load32U(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Int64Load32S(AbstractTile):
-    name = "Int64Load32S"
+    name = "I64Load32S"
 
     def __init__(self, seed: int):
         super().__init__(seed)

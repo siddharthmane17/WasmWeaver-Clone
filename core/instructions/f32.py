@@ -12,7 +12,7 @@ from core.value import F32, I32, F64, I64
 
 
 class Float32Const(AbstractTile):
-    name = "Float32Const"
+    name = "F32Const"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -42,9 +42,8 @@ class Float32Const(AbstractTile):
         # based on the value itself
         return 5  # This is assuming constant size, adjust if a different model is used
 
-
 class Float32Add(AbstractTile):
-    name = "Float32Add"
+    name = "F32Add"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -65,9 +64,8 @@ class Float32Add(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float32Sub(AbstractTile):
-    name = "Float32Sub"
+    name = "F32Sub"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -88,9 +86,8 @@ class Float32Sub(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float32Mul(AbstractTile):
-    name = "Float32Mul"
+    name = "F32Mul"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -111,9 +108,8 @@ class Float32Mul(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float32Div(AbstractTile):
-    name = "Float32Div"
+    name = "F32Div"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -141,7 +137,7 @@ class Float32Div(AbstractTile):
         return 1
 
 class Float32Sqrt(AbstractTile):
-    name = "Float32Sqrt"
+    name = "F32Sqrt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -163,7 +159,7 @@ class Float32Sqrt(AbstractTile):
         return 1
 
 class Float32Min(AbstractTile):
-    name = "Float32Min"
+    name = "F32Min"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -185,7 +181,7 @@ class Float32Min(AbstractTile):
         return 1
 
 class Float32Max(AbstractTile):
-    name = "Float32Max"
+    name = "F32Max"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -207,7 +203,7 @@ class Float32Max(AbstractTile):
         return 1
 
 class Float32Ceil(AbstractTile):
-    name = "Float32Ceil"
+    name = "F32Ceil"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -228,7 +224,7 @@ class Float32Ceil(AbstractTile):
 
 
 class Float32Floor(AbstractTile):
-    name = "Float32Floor"
+    name = "F32Floor"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -248,7 +244,7 @@ class Float32Floor(AbstractTile):
         return 1
 
 class Float32Trunc(AbstractTile):
-    name = "Float32Trunc"
+    name = "F32Trunc"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -268,7 +264,7 @@ class Float32Trunc(AbstractTile):
         return 1
 
 class Float32Nearest(AbstractTile):
-    name = "Float32Nearest"
+    name = "F32Nearest"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -288,7 +284,7 @@ class Float32Nearest(AbstractTile):
         return 1
 
 class Float32Abs(AbstractTile):
-    name = "Float32Abs"
+    name = "F32Abs"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -308,7 +304,7 @@ class Float32Abs(AbstractTile):
         return 1
 
 class Float32Neg(AbstractTile):
-    name = "Float32Neg"
+    name = "F32Neg"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -328,7 +324,7 @@ class Float32Neg(AbstractTile):
         return 1
 
 class Float32CopySign(AbstractTile):
-    name = "Float32CopySign"
+    name = "F32CopySign"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -348,7 +344,6 @@ class Float32CopySign(AbstractTile):
 
     def get_byte_code_size(self):
         return 1
-
 
 class Float32Eq(AbstractTile):
     name = "Float32Eq"
@@ -374,7 +369,7 @@ class Float32Eq(AbstractTile):
         return 1
 
 class Float32Ne(AbstractTile):
-    name = "Float32Ne"
+    name = "F32Ne"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -397,7 +392,7 @@ class Float32Ne(AbstractTile):
         return 1
 
 class Float32Lt(AbstractTile):
-    name = "Float32Lt"
+    name = "F32Lt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -420,7 +415,7 @@ class Float32Lt(AbstractTile):
         return 1
 
 class Float32Le(AbstractTile):
-    name = "Float32Le"
+    name = "F32Le"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -443,7 +438,7 @@ class Float32Le(AbstractTile):
         return 1
 
 class Float32Gt(AbstractTile):
-    name = "Float32Gt"
+    name = "F32Gt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -465,9 +460,8 @@ class Float32Gt(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float32Ge(AbstractTile):
-    name = "Float32Ge"
+    name = "F32Ge"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -490,7 +484,7 @@ class Float32Ge(AbstractTile):
         return 1
 
 class Float32DemoteF64(AbstractTile):
-    name = "Float32DemoteF64"
+    name = "F32DemoteF64"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -510,7 +504,7 @@ class Float32DemoteF64(AbstractTile):
         return 1
 
 class Float32ConvertI32S(AbstractTile):
-    name = "Float32ConvertI32S"
+    name = "F32ConvertI32S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -530,7 +524,7 @@ class Float32ConvertI32S(AbstractTile):
         return 1
 
 class Float32ConvertI32U(AbstractTile):
-    name = "Float32ConvertI32U"
+    name = "F32ConvertI32U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -550,7 +544,7 @@ class Float32ConvertI32U(AbstractTile):
         return 1
 
 class Float32ConvertI64S(AbstractTile):
-    name = "Float32ConvertI64S"
+    name = "F32ConvertI64S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -570,7 +564,7 @@ class Float32ConvertI64S(AbstractTile):
         return 1
 
 class Float32ConvertI64U(AbstractTile):
-    name = "Float32ConvertI64U"
+    name = "F32ConvertI64U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -590,7 +584,7 @@ class Float32ConvertI64U(AbstractTile):
         return 1
 
 class Float32ReinterpretI32(AbstractTile):
-    name = "Float32ReinterpretI32"
+    name = "F32ReinterpretI32"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -610,9 +604,8 @@ class Float32ReinterpretI32(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float32Store(AbstractTile):
-    name = "Float32Store"
+    name = "F32Store"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -643,9 +636,8 @@ class Float32Store(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
 class Float32Load(AbstractTile):
-    name = "Float32Load"
+    name = "F32Load"
 
     def __init__(self, seed: int):
         super().__init__(seed)

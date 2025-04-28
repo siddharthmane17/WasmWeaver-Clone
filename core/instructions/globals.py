@@ -46,12 +46,12 @@ class AbstractGlobalFactory(AbstractTileFactory):
     def create_global_get_tile(self, global_name, create_global: bool = False):
 
         class GlobalGet(AbstractTile):
-            name = f"GlobalGet {global_name}"
+            name = f"Get global"
 
             def __init__(self, seed: int):
                 nonlocal global_name, create_global
                 super().__init__(seed)
-                self.name = f"GlobalGet {global_name}"
+                self.name = f"Get global"
                 self.global_name = global_name
                 self.create_local = create_global
                 self.last_value = None
@@ -90,12 +90,12 @@ class AbstractGlobalFactory(AbstractTileFactory):
         """Used for creating local set tiles"""
 
         class GlobalSet(AbstractTile):
-            name = f"GlobalSet {global_name}"
+            name = f"Set global"
 
             def __init__(self, seed: int):
                 nonlocal global_name, create_global
                 super().__init__(seed)
-                self.name = f"GlobalSet {global_name}"
+                self.name = f"Set global"
                 self.global_name = global_name
                 self.create_local = create_global
                 self.last_value = None

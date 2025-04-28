@@ -36,18 +36,39 @@ class RandomSelectionStrategy(AbstractSelectionStrategy):
         """
 
         #Disable all load and store instructions
-        #if "Load" in tile.name or "Store" in tile.name:
-        #    return -1
+        if "Load" in tile.name or "Store" in tile.name:
+            return -1
 
         #Reduce const instructions
-        #if "Const" in tile.name:
-        #    return random.random()*0.1
+        if "Const" in tile.name:
+            return random.random()*1
 
-        #if "GlobalGet" in tile.name:
-        #    return random.random()*0.1
+        if "GlobalGet" in tile.name:
+            return random.random()*1
 
-        #if "LocalGet" in tile.name:
-        #    return random.random()*0.1
+        if "Drop" in tile.name:
+            return random.random()*1
+
+        if "GlobalSet" in tile.name:
+            return random.random()*1
+
+        if "LocalGet" in tile.name:
+            return random.random()*1
+
+        if "NoOp" in tile.name:
+            return random.random()*1
+
+        if tile.name.startswith("Create and call function"):
+            return -1
+
+        if tile.name.startswith("A simple loop block"):
+            return -1
+
+        if tile.name.startswith("A simple condition block"):
+            return -1
+
+        if tile.name.startswith("A simple block"):
+            return -1
 
         if tile.name == "Canary":
             return -1

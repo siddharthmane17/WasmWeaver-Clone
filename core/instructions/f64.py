@@ -10,7 +10,7 @@ from core.tile import AbstractTile
 from core.value import F32, I32, F64, I64
 
 class Float64Const(AbstractTile):
-    name = "Float64Const"
+    name = "F64Const"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -42,9 +42,8 @@ class Float64Const(AbstractTile):
         # based on the value itself
         return 9  # This is assuming constant size, adjust if a different model is used
 
-
 class Float64Add(AbstractTile):
-    name = "Float64Add"
+    name = "F64Add"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -65,9 +64,8 @@ class Float64Add(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Sub(AbstractTile):
-    name = "Float64Sub"
+    name = "F64Sub"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -88,9 +86,8 @@ class Float64Sub(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Mul(AbstractTile):
-    name = "Float64Mul"
+    name = "F64Mul"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -111,9 +108,8 @@ class Float64Mul(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Div(AbstractTile):
-    name = "Float64Div"
+    name = "F64Div"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -141,7 +137,7 @@ class Float64Div(AbstractTile):
         return 1
 
 class Float64Sqrt(AbstractTile):
-    name = "Float64Sqrt"
+    name = "F64Sqrt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -162,7 +158,7 @@ class Float64Sqrt(AbstractTile):
         return 1
 
 class Float64Min(AbstractTile):
-    name = "Float64Min"
+    name = "F64Min"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -184,7 +180,7 @@ class Float64Min(AbstractTile):
         return 1
 
 class Float64Max(AbstractTile):
-    name = "Float64Max"
+    name = "F64Max"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -206,7 +202,7 @@ class Float64Max(AbstractTile):
         return 1
 
 class Float64Ceil(AbstractTile):
-    name = "Float64Ceil"
+    name = "F64Ceil"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -225,9 +221,8 @@ class Float64Ceil(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Floor(AbstractTile):
-    name = "Float64Floor"
+    name = "F64Floor"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -249,7 +244,7 @@ class Float64Floor(AbstractTile):
         return 1
 
 class Float64Trunc(AbstractTile):
-    name = "Float64Trunc"
+    name = "F64Trunc"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -269,7 +264,7 @@ class Float64Trunc(AbstractTile):
         return 1
 
 class Float64Nearest(AbstractTile):
-    name = "Float64Nearest"
+    name = "F64Nearest"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -289,7 +284,7 @@ class Float64Nearest(AbstractTile):
         return 1
 
 class Float64Abs(AbstractTile):
-    name = "Float64Abs"
+    name = "F64Abs"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -309,7 +304,7 @@ class Float64Abs(AbstractTile):
         return 1
 
 class Float64Neg(AbstractTile):
-    name = "Float64Neg"
+    name = "F64Neg"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -329,7 +324,7 @@ class Float64Neg(AbstractTile):
         return 1
 
 class Float64CopySign(AbstractTile):
-    name = "Float64CopySign"
+    name = "F64CopySign"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -350,9 +345,8 @@ class Float64CopySign(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Eq(AbstractTile):
-    name = "Float64Eq"
+    name = "F64Eq"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -375,7 +369,7 @@ class Float64Eq(AbstractTile):
         return 1
 
 class Float64Ne(AbstractTile):
-    name = "Float64Ne"
+    name = "F64Ne"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -398,7 +392,7 @@ class Float64Ne(AbstractTile):
         return 1
 
 class Float64Lt(AbstractTile):
-    name = "Float64Lt"
+    name = "F64Lt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -421,7 +415,7 @@ class Float64Lt(AbstractTile):
         return 1
 
 class Float64Le(AbstractTile):
-    name = "Float64Le"
+    name = "F64Le"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -444,7 +438,7 @@ class Float64Le(AbstractTile):
         return 1
 
 class Float64Gt(AbstractTile):
-    name = "Float64Gt"
+    name = "F64Gt"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -466,9 +460,8 @@ class Float64Gt(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Ge(AbstractTile):
-    name = "Float64Ge"
+    name = "F64Ge"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -491,7 +484,7 @@ class Float64Ge(AbstractTile):
         return 1
 
 class Float64PromoteF32(AbstractTile):
-    name = "Float64PromoteF32"
+    name = "F64PromoteF32"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -513,7 +506,7 @@ class Float64PromoteF32(AbstractTile):
         return 1
 
 class Float64ConvertI32S(AbstractTile):
-    name = "Float64ConvertI32S"
+    name = "F64ConvertI32S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -533,7 +526,7 @@ class Float64ConvertI32S(AbstractTile):
         return 1
 
 class Float64ConvertI32U(AbstractTile):
-    name = "Float64ConvertI32U"
+    name = "F64ConvertI32U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -553,7 +546,7 @@ class Float64ConvertI32U(AbstractTile):
         return 1
 
 class Float64ConvertI64S(AbstractTile):
-    name = "Float64ConvertI64S"
+    name = "F64ConvertI64S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -573,7 +566,7 @@ class Float64ConvertI64S(AbstractTile):
         return 1
 
 class Float64ConvertI64U(AbstractTile):
-    name = "Float64ConvertI64U"
+    name = "F64ConvertI64U"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -593,7 +586,7 @@ class Float64ConvertI64U(AbstractTile):
         return 1
 
 class Float64ReinterpretI64(AbstractTile):
-    name = "Float64ReinterpretI64"
+    name = "F64ReinterpretI64"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -613,9 +606,8 @@ class Float64ReinterpretI64(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float64Store(AbstractTile):
-    name = "Float64Store"
+    name = "F64Store"
 
     def __init__(self, seed: int):
         super().__init__(seed)
@@ -646,10 +638,8 @@ class Float64Store(AbstractTile):
     def get_byte_code_size(self):
         return 2
 
-
-
 class Float64Load(AbstractTile):
-    name = "Float64Load"
+    name = "F64Load"
 
     def __init__(self, seed: int):
         super().__init__(seed)

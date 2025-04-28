@@ -46,13 +46,13 @@ class AbstractTableFactory(AbstractTileFactory):
     def create_table_get_tile(self, table_name: str, create_table: bool = False):
 
         class TableGet(AbstractTile):
-            name = f"TableGet {table_name}"
+            name = f"Get table"
             table_size = random.randint(1, MAX_TABLE_SIZE) if create_table else 0
 
             def __init__(self, seed: int):
                 nonlocal table_name, create_table
                 super().__init__(seed)
-                self.name = f"TableGet {table_name}"
+                self.name = f"Get table"
                 self.create_table = create_table
                 self.table_name = table_name
                 self.last_value = None
@@ -94,13 +94,13 @@ class AbstractTableFactory(AbstractTileFactory):
         """Used for creating local set tiles"""
 
         class TableSet(AbstractTile):
-            name = f"TableSet {table_name}"
+            name = f"Set table"
             table_size = random.randint(1, MAX_TABLE_SIZE) if create_table else 0
 
             def __init__(self, seed: int):
                 nonlocal table_name, create_table
                 super().__init__(seed)
-                self.name = f"TableSet {table_name}"
+                self.name = f"Set table"
                 self.table_name = table_name
                 self.create_local = create_table
                 self.last_value = None
