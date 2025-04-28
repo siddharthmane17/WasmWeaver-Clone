@@ -24,29 +24,30 @@ class AbstractGlobalFactory(AbstractTileFactory):
         super().__init__(seed, tile_loader)
 
     def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> [Type[AbstractTile]]:
-        for global_var in global_state.globals.globals:
-            global_get_tile = self.create_global_get_tile(global_var.name)
+        for index, global_var in enumerate(global_state.globals.globals):
+            global_get_tile = self.create_global_get_tile(global_var.name, global_index=index)
             if global_get_tile.can_be_placed(global_state, current_function,current_blocks):
                 yield global_get_tile
-            global_set_tile = self.create_global_set_tile(global_var.name)
+            global_set_tile = self.create_global_set_tile(global_var.name, global_index=index)
             if global_set_tile.can_be_placed(global_state, current_function,current_blocks):
                 yield global_set_tile
 
         new_set_tile = self.create_global_set_tile(generate_random_global_name(global_state),
-                                                   create_global=True)
+                                                   create_global=True, global_index=len(global_state.globals))
         if new_set_tile.can_be_placed(global_state, current_function, current_blocks):
             yield new_set_tile
 
         # Add random local type
         get_tile = self.create_global_get_tile(generate_random_global_name(global_state),
-                                               create_global=True)
+                                               create_global=True, global_index=len(global_state.globals))
         if get_tile.can_be_placed(global_state, current_function, current_blocks):
             yield get_tile
 
-    def create_global_get_tile(self, global_name, create_global: bool = False):
+    def create_global_get_tile(self, global_name, create_global: bool = False, global_index: int = 0):
 
         class GlobalGet(AbstractTile):
             name = f"Get global"
+            index = global_index
 
             def __init__(self, seed: int):
                 nonlocal global_name, create_global
@@ -86,11 +87,12 @@ class AbstractGlobalFactory(AbstractTileFactory):
 
         return GlobalGet
 
-    def create_global_set_tile(self, global_name, create_global: bool = False):
+    def create_global_set_tile(self, global_name, create_global: bool = False, global_index = 0):
         """Used for creating local set tiles"""
 
         class GlobalSet(AbstractTile):
             name = f"Set global"
+            index = global_index
 
             def __init__(self, seed: int):
                 nonlocal global_name, create_global

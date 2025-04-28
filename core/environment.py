@@ -10,13 +10,18 @@ from gymnasium.spaces import Dict, Box
 from gymnasium.spaces.space import T_cov
 from ray.rllib.env import EnvContext
 
-from core.constraints import AbstractConstraint, ByteCodeSizeConstraint, FuelConstraint
+from core.constraints import AbstractConstraint, ByteCodeSizeConstraint, FuelConstraint, ConstraintsViolatedError
 from core.loader import TileLoader
-from core.state.functions import Function
+from core.state.functions import Function, Block
+from drl.embedder.constraints import ConstraintsEmbedder
+from core.value import Val
 from core.state.state import GlobalState
 from core.strategy import AbstractSelectionStrategy
 from core.tile import AbstractTile
 from core.util import generate_function
+from drl.embedder.function import FunctionEmbedder
+from drl.embedder.stack import StackEmbedder
+from drl.embedder.tiles import TilesEmbedder
 
 EXCEPTION = -1
 FINISHED_SUCCESS = 1
@@ -32,7 +37,7 @@ class EnvSelectionStrategy(AbstractSelectionStrategy):
 
     name = "EnvSelectionStrategy"  # This is the name of the strategy
 
-    def get_weight(self, tile: Type["AbstractTile"], current_state: GlobalState, current_function: Function):
+    def get_weight(self, tile: Type["AbstractTile"], current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """
         Returns a random weight for the tile.
         """
@@ -40,6 +45,7 @@ class EnvSelectionStrategy(AbstractSelectionStrategy):
             raise Exception("Thread was reset!")
         self.env.current_state = current_state
         self.env.current_function = current_function
+        self.env.current_blocks = current_blocks
         self.env.current_tile = tile
         self.env.global_state_ready.release()
         self.env.action_ready.acquire()
@@ -60,29 +66,49 @@ class ObjectSpace(Space):
     def sample(self, mask: Any | None = None) -> T_cov:
         raise NotImplementedError("Cannot sample an arbitrary object.")
 
-OBSERVATION_SPACE = Dict({"global_state": ObjectSpace(),
-                                       "current_function": ObjectSpace(),
-                                       "tile": ObjectSpace()})
-
-ACTION_SPACE =  gym.spaces.Box(low=0, high=1, shape=(1,))
-
 class WasmWeaverEnv(gym.Env):
 
-    def __init__(self, config: EnvContext):
+    def __init__(self, constraints: List[AbstractConstraint], input_types: List[Type[Val]] = None, output_types: List[Val] = None):
         super(WasmWeaverEnv, self).__init__()
-        self.action_space =  ACTION_SPACE# The weight
-        self.observation_space = OBSERVATION_SPACE
-        self.constraints: List[AbstractConstraint] = config.get("constraints", [])
+
+        self.function_embedder = FunctionEmbedder()
+        self.stack_embedder = StackEmbedder()
+        self.constraints_embedder = ConstraintsEmbedder()
+        self.tiles_embedder = TilesEmbedder()
+
+        if input_types is None:
+            self.input_types = []
+        else:
+            self.input_types = input_types
+
+        if output_types is None:
+            self.output_types = []
+        else:
+            self.output_types = output_types
+
+        self.action_space = gym.spaces.Box(low=0, high=1, shape=())
+        self.observation_space = Dict({
+           "current_function":self.function_embedder.get_space(),
+           "current_stack":self.stack_embedder.get_space(),
+           "constraints": self.constraints_embedder.get_space(),
+           "tile":self.tiles_embedder.get_space()
+        })
+        self.constraints: List[AbstractConstraint] = constraints
         self.global_state_ready = threading.Semaphore(0)
         self.action_ready = threading.Semaphore(0)
         self.current_state: GlobalState | None = None
         self.current_tile: Type[AbstractTile] | None = None
         self.current_function: Function | None = None
+        self.current_blocks: List[Block] | None = None
         self.selected_weight: float = 0
         self.thread: threading.Thread | None = None
         self.tile_loader = TileLoader("core/instructions/")
         self.finish_state = None
         self.finish_thread = False
+
+
+
+
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -102,14 +128,22 @@ class WasmWeaverEnv(gym.Env):
 
     def generate(self):
         try:
-            print("Starting!")
-            generate_function(self.tile_loader, "run", [], False, self.init_state,
-                              is_entry=True, selection_strategy=EnvSelectionStrategy(self))
+            generate_function(self.tile_loader,
+                        "run",
+                              self.input_types,
+                              False,
+                              self.init_state,
+                              is_entry=True,
+                              selection_strategy=EnvSelectionStrategy(self),
+                              fixed_output_types=self.output_types
+                              )
             self.finish_state = "Success"
             self.global_state_ready.release()
-            print("Finished!")
+        except ConstraintsViolatedError as e:
+            self.finish_state = e
+            self.global_state_ready.release()
         except Exception as e:
-            print(e)
+            raise e
             self.finish_state = e
             self.global_state_ready.release()
 
@@ -147,9 +181,44 @@ class WasmWeaverEnv(gym.Env):
         elif self.finish_state == "Success":
             reward = FINISHED_SUCCESS
             done = True
-        return ({"global_state": np.array([self.current_state],dtype=object),
-                 "current_function": np.array([self.current_function],dtype=object),
-                 "tile": np.array([self.current_tile],dtype=object)},
+
+        state = {
+           "current_function":self.function_embedder(self.current_function),
+           "current_stack":self.stack_embedder(self.current_state.stack),
+           "constraints": self.constraints_embedder(self.current_state.constraints.constraints),
+           "tile":self.tiles_embedder(self.current_tile)
+        }
+
+        if not self.observation_space.contains(state):
+            # Check all spaces
+            if self.function_embedder.get_space().contains(self.function_embedder(self.current_function)):
+                print("Function embedder ok!")
+            else:
+                print("Function embedder failed!")
+                print(self.function_embedder(self.current_function))
+
+            if self.stack_embedder.get_space().contains(self.stack_embedder(self.current_state.stack)):
+                print("Stack embedder ok!")
+            else:
+                print("Stack embedder failed!")
+                print(self.stack_embedder(self.current_state.stack))
+
+            if self.constraints_embedder.get_space().contains(
+                    self.constraints_embedder(self.current_state.constraints.constraints)):
+                print("Constraints embedder ok!")
+            else:
+                print("Constraints embedder failed!")
+                print(self.constraints_embedder(self.current_state.constraints.constraints))
+
+            if self.tiles_embedder.get_space().contains(self.tiles_embedder(self.current_tile)):
+                print("Tiles embedder ok!")
+            else:
+                print("Tiles embedder failed!")
+                print(self.tiles_embedder(self.current_tile))
+
+            raise Exception(f"Observation is not valid")
+
+        return (state,
                 reward,
                 done,
                 truncated,
@@ -165,34 +234,47 @@ class WasmWeaverEnv(gym.Env):
         super().reset(seed=seed)
 
         self._init_state()
+
+        print(self.global_state_ready._value)
+
         self.global_state_ready.acquire()
 
-        return ({"global_state": np.array([self.current_state],dtype=object),
-                 "current_function": np.array([self.current_function],dtype=object),
-                 "tile": np.array([self.current_tile],dtype=object)},
+        state = {
+           "current_function":self.function_embedder(self.current_function),
+           "current_stack":self.stack_embedder(self.current_state.stack),
+           "constraints": self.constraints_embedder(self.current_state.constraints.constraints),
+           "tile":self.tiles_embedder(self.current_tile)
+        }
+
+        if not self.observation_space.contains(state):
+            #Check all spaces
+            if self.function_embedder.get_space().contains(self.function_embedder(self.current_function)):
+                print("Function embedder ok!")
+            else:
+                print("Function embedder failed!")
+                print(self.function_embedder(self.current_function))
+
+            if self.stack_embedder.get_space().contains(self.stack_embedder(self.current_state.stack)):
+                print("Stack embedder ok!")
+            else:
+                print("Stack embedder failed!")
+                print(self.stack_embedder(self.current_state.stack))
+
+            if self.constraints_embedder.get_space().contains(self.constraints_embedder(self.current_state.constraints.constraints)):
+                print("Constraints embedder ok!")
+            else:
+                print("Constraints embedder failed!")
+                print(self.constraints_embedder(self.current_state.constraints.constraints))
+
+            if self.tiles_embedder.get_space().contains(self.tiles_embedder(self.current_tile)):
+                print("Tiles embedder ok!")
+            else:
+                print("Tiles embedder failed!")
+                print(self.tiles_embedder(self.current_tile))
+
+            raise Exception(f"Observation is not valid")
+
+        return (state,
                 {})
 
 
-def main():
-    gym.register(
-        id="gymnasium_env/WasmWeaverEnv-v0",
-        entry_point=WasmWeaverEnv,
-    )
-
-    env = gym.make("gymnasium_env/WasmWeaverEnv-v0",
-                   constraints=[ByteCodeSizeConstraint(0, 100), FuelConstraint(10, 5000)])
-    print("Environment created")
-    for epoch in range(100):
-        done = False
-        env.reset()
-        while not done:
-            action = env.action_space.sample()
-            obs, reward, done, truncated, info = env.step(action)
-            if done:
-                print(f"Epoch: {epoch}, Action: {action}, Obs: {obs}, Reward: {reward}, Done: {done}")
-                print("Done!")
-                break
-
-
-if __name__ == '__main__':
-    main()

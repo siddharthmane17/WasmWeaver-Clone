@@ -735,7 +735,7 @@ class Int64GtU(AbstractTile):
         return 1
 
 class Int64GeS(AbstractTile):
-    name = "Int64GeS"
+    name = "I64GeS"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -939,7 +939,7 @@ class Int64TruncF64U(AbstractTile):
         return 1
 
 class Int64ReinterpretF64(AbstractTile):
-    name = "Int64ReinterpretF64"
+    name = "I64ReinterpretF64"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -961,7 +961,7 @@ class Int64ReinterpretF64(AbstractTile):
         return 1
 
 class Int64Extend8S(AbstractTile):
-    name = "Int64Extend8S"
+    name = "I64Extend8S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -983,7 +983,7 @@ class Int64Extend8S(AbstractTile):
         return 1
 
 class Int64Extend16S(AbstractTile):
-    name = "Int64Extend16S"
+    name = "I64Extend16S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -1006,7 +1006,7 @@ class Int64Extend16S(AbstractTile):
         return 1
 
 class Int64Extend32S(AbstractTile):
-    name = "Int64Extend32S"
+    name = "I64Extend32S"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -1153,7 +1153,7 @@ class Int64Store32(AbstractTile):
         return 2
 
 class Int64Load(AbstractTile):
-    name = "Int64Load"
+    name = "I64Load"
 
     def __init__(self, seed: int):
         super().__init__(seed)

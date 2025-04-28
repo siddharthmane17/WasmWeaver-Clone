@@ -30,6 +30,9 @@ class Globals:
         self.globals.append(value)
         return len(self.globals) - 1
 
+    def __len__(self):
+        return len(self.globals)
+
     def __getitem__(self, item):
         return self.globals[item]
 

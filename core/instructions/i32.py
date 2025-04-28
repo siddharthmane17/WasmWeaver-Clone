@@ -393,7 +393,7 @@ class Int32Rotl(AbstractTile):
         return 1
 
 class Int32Rotr(AbstractTile):
-    name = "Int32Rotr"
+    name = "I32Rotr"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):

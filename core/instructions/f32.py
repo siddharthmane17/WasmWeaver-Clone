@@ -222,7 +222,6 @@ class Float32Ceil(AbstractTile):
     def get_byte_code_size(self):
         return 1
 
-
 class Float32Floor(AbstractTile):
     name = "F32Floor"
 
@@ -346,7 +345,7 @@ class Float32CopySign(AbstractTile):
         return 1
 
 class Float32Eq(AbstractTile):
-    name = "Float32Eq"
+    name = "F32Eq"
 
     @staticmethod
     def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):

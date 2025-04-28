@@ -4,11 +4,12 @@ from core.value import Ref, RefFunc
 
 
 class Table:
-    def __init__(self, name: str, table_type: Type[RefFunc], size: int):
+    def __init__(self, name: str, index:int, table_type: Type[RefFunc], size: int):
         self.name = name
         self.table_type = table_type
         self.elements: List[Ref] = [table_type(None)] * size
         self.size = size
+        self.index = index
 
     def wipe(self):
         self.elements = [self.table_type(None)] * self.size

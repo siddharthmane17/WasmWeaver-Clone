@@ -64,7 +64,7 @@ def generate_function(tile_loader: AbstractTileLoader, name: str, input_types: L
     if global_state.constraints.any_violated():
         raise ValueError(f"Constraints are already violated at the beginning of function generation")
 
-    f = Function(name, inputs=input_types, outputs=fixed_output_types, is_external=is_external)
+    f = Function(name,len(global_state.functions), inputs=input_types, outputs=fixed_output_types, is_external=is_external)
     f.selection_strategy = selection_strategy
     #Add function stack frame
     global_state.stack.push_frame(global_state.stack.get_current_frame().stack_pop_n_in_order(len(input_types)),
@@ -173,7 +173,7 @@ def generate_block(tile_loader: AbstractTileLoader, global_state: GlobalState, c
         raise ValueError(f"Constraints are already violated at the beginning of block generation")
 
 
-    block = Block(name)
+    block = Block(name,index=len(current_function.blocks))
     block.inputs = input_types
     current_function.blocks.append(block)
     #Stack frame with shared locals with previous function

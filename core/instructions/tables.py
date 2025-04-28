@@ -26,28 +26,30 @@ class AbstractTableFactory(AbstractTileFactory):
     def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> [
         Type[AbstractTile]]:
         for table in global_state.tables.tables.values():
-            table_get_tile = self.create_table_get_tile(table.name)
+            table_get_tile = self.create_table_get_tile(table.name,global_state.tables.get(table.name).index)
             if table_get_tile.can_be_placed(global_state, current_function, current_blocks):
                 yield table_get_tile
-            table_set_tile = self.create_table_set_tile(table.name)
+            table_set_tile = self.create_table_set_tile(table.name,
+                                                        global_state.tables.get(table.name).index)
             if table_set_tile.can_be_placed(global_state, current_function, current_blocks):
                 yield table_set_tile
 
-        new_set_tile = self.create_table_set_tile(generate_random_table_name(global_state),
+        new_set_tile = self.create_table_set_tile(generate_random_table_name(global_state),len(global_state.tables),
                                                   create_table=True)
         if new_set_tile.can_be_placed(global_state, current_function, current_blocks):
             yield new_set_tile
         #Currently disabled to not flood the stack with null ref
-        new_get_tile = self.create_table_get_tile(generate_random_table_name(global_state),
+        new_get_tile = self.create_table_get_tile(generate_random_table_name(global_state),len(global_state.tables),
                                                     create_table=True)
         if new_get_tile.can_be_placed(global_state, current_function, current_blocks):
             yield new_get_tile
 
-    def create_table_get_tile(self, table_name: str, create_table: bool = False):
+    def create_table_get_tile(self, table_name: str, table_index: int, create_table: bool = False):
 
         class TableGet(AbstractTile):
             name = f"Get table"
             table_size = random.randint(1, MAX_TABLE_SIZE) if create_table else 0
+            index = table_index
 
             def __init__(self, seed: int):
                 nonlocal table_name, create_table
@@ -75,7 +77,7 @@ class AbstractTableFactory(AbstractTileFactory):
 
             def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if create_table:
-                    table = Table(self.table_name, RefFunc, self.table_size)
+                    table = Table(self.table_name, len(current_state.tables), RefFunc, self.table_size)
                     current_state.tables.set(table)
                 table = current_state.tables.tables[self.table_name]
                 index = current_state.stack.get_current_frame().stack_pop().value
@@ -90,12 +92,13 @@ class AbstractTableFactory(AbstractTileFactory):
 
         return TableGet
 
-    def create_table_set_tile(self, table_name: str, create_table: bool = False):
+    def create_table_set_tile(self, table_name: str, table_index: int, create_table: bool = False):
         """Used for creating local set tiles"""
 
         class TableSet(AbstractTile):
             name = f"Set table"
             table_size = random.randint(1, MAX_TABLE_SIZE) if create_table else 0
+            index = table_index
 
             def __init__(self, seed: int):
                 nonlocal table_name, create_table
@@ -125,7 +128,7 @@ class AbstractTableFactory(AbstractTileFactory):
 
             def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
                 if create_table:
-                    table = Table(table_name, RefFunc, self.table_size)
+                    table = Table(table_name,len(current_state.tables), RefFunc, self.table_size)
                     current_state.tables.set(table)
 
                 table = current_state.tables.tables[table_name]

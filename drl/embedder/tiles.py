@@ -1,20 +1,33 @@
-from typing import List
-import torch
+from typing import List, Type
+from gymnasium.spaces import Discrete, MultiDiscrete, Dict
+import numpy as np
 from core.tile import AbstractTile
 
+MAX_TILE_ID = 512
+MAX_ACTIONS = 300
+MAX_ARG_VALUE = 128
 
 class TilesEmbedder:
 
-    def __init__(self, max_length):
-        self.max_length = max_length
+    def __init__(self):
+        ...
 
-    def __call__(self, tiles: List[AbstractTile]):
-        tile_tensor = torch.zeros(self.max_length,dtype=torch.int32)
-        args_tensor = torch.zeros(self.max_length,dtype=torch.int32)
-        mask = torch.zeros(self.max_length,dtype=torch.int32)
+    def get_space(self):
+        return Dict({
+            "id":Discrete(MAX_TILE_ID),
+            "args":Discrete(MAX_ARG_VALUE)
+        })
 
-    def get_tile_id(self, tile: AbstractTile):
+    def __call__(self, tile: AbstractTile):
+        return {"id":self.get_id(tile), "args":self.get_args(tile)}
+
+
+    def get_id(self, tile: AbstractTile | Type[AbstractTile]):
         match tile.name:
+            #Phantom tiles
+            case "Finish":
+                return 5
+
             #Basic tiles
             case "NoOp":
                 return 10
@@ -38,7 +51,7 @@ class TilesEmbedder:
                 return 40
 
             #Conditional tiles
-            case "Create conditional block":
+            case "Create conditional":
                 return 50
             case "Create unbounded loop":
                 return 60
@@ -393,3 +406,37 @@ class TilesEmbedder:
 
             case _:
                 raise ValueError(f"Unknown tile name: {tile.name}")
+    def get_args(self, tile: AbstractTile | Type[AbstractTile]):
+        match tile.name:
+            #Functions
+            case "Create and call function":
+                return tile.index
+            case "Call function":
+                return tile.index
+            case "Indirect call function":
+                return tile.index
+            case "Push function reference to stack":
+                return tile.index
+
+            #Globals
+            case "Get global":
+                return tile.index
+            case "Set global":
+                return tile.index
+
+            #Locals
+            case "Get local":
+                return tile.index
+            case "Set local":
+                return tile.index
+            case "Tee local":
+                return tile.index
+
+            #Tables
+            case "Get table":
+                return tile.index
+            case "Set table":
+                return tile.index
+
+            case _:
+                return 0

@@ -16,8 +16,9 @@ from core.value import Val
 class Block:
     """A simple block representation"""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, index: int):
         self.name = name
+        self.index = index
         self.inputs: List[Type[Val]] = []
         self.outputs: List[Type[Val]] = []
         self.tiles: List["AbstractTile"] = []
@@ -55,8 +56,9 @@ class Block:
 class Function:
     """A simple function representation"""
 
-    def __init__(self, name, inputs: List[Type[Val]], outputs: List[Type[Val]], is_external=False):
+    def __init__(self, name, index, inputs: List[Type[Val]], outputs: List[Type[Val]], is_external=False):
         self.name = name
+        self.index = index
         self.inputs = inputs
         self.outputs = outputs
         self.is_external = is_external

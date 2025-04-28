@@ -7,10 +7,10 @@ Further, soft lower response time/fuel/byte code limits and soft upper limits ar
 At the current time we do support most instructions and concepts. The following instructions are already supported:
 ##### Control Flow Instructions
 - [x] block
-- [x] loop: Only bounded for loops are supported
-- [ ] br, br_if, br_table: Are contained in the loop instruction, but not used directly
+- [x] loop: Only simple unbounded (nested) for loops are supported. Bounded for loops will be supported in future
+- [ ] br, br_if, br_table: Are contained in the loop instruction, will fully supported in future
 - [x] if, else
-- [ ] return: Not supported
+- [ ] return: Will be supported in the future
 - [ ] unreachable: Not supported
 
 ##### Basic Instructions

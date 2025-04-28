@@ -101,7 +101,6 @@ class I64(Num):
     def __str__(self):
         return "I64: " + str(self.value)
 
-
 class F32(Num):
 
     def __init__(self, value=np.float32(0.0)):
@@ -129,7 +128,6 @@ class F32(Num):
     def __str__(self):
         return "F32: " + str(self.value)
 
-
 class F64(Num):
 
     def __init__(self, value=np.float64(0.0)):
@@ -156,8 +154,6 @@ class F64(Num):
 
     def __str__(self):
         return "F64: " + str(self.value)
-
-
 #Vector types
 class Vec(Val):
 
@@ -167,7 +163,6 @@ class Vec(Val):
     def __str__(self):
         return "Vec: " + str(self.value)
 
-
 class V128(Vec):
 
     def __init__(self, value=0):
@@ -175,8 +170,6 @@ class V128(Vec):
 
     def __str__(self):
         return "V128: " + str(self.value)
-
-
 #Reference types
 class Ref(Val):
 
@@ -185,7 +178,6 @@ class Ref(Val):
 
     def __str__(self):
         return "Ref: " + str(self.value)
-
 
 class RefFunc(Ref):
 
@@ -213,7 +205,6 @@ class RefFunc(Ref):
 
     def to_init_str(self):
         return f"ref.null func"
-
 
 class RefExtern(Ref):
 

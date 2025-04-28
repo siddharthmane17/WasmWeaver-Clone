@@ -36,14 +36,15 @@ class AbstractLocalFactory(AbstractTileFactory):
         if get_tile.can_be_placed(global_state, current_function, current_blocks):
             yield get_tile
 
-    def create_local_get_tile(self, index, create_local: bool = False):
+    def create_local_get_tile(self, local_index, create_local: bool = False):
 
         class LocalGet(AbstractTile):
             name = f"Get local"
+            index = local_index
 
             def __init__(self, seed: int):
                 super().__init__(seed)
-                self.index = index
+                self.index = local_index
                 self.create_local = create_local
 
             @staticmethod
@@ -78,26 +79,27 @@ class AbstractLocalFactory(AbstractTileFactory):
                             raise ValueError(
                                 f"Local type mismatch. Expected {current_function.local_types[self.index]} got {type(self.local)}")
 
-                current_state.stack.get_current_frame().stack_push(current_state.stack.get_current_frame().locals[index])
+                current_state.stack.get_current_frame().stack_push(current_state.stack.get_current_frame().locals[local_index])
 
             def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
-                return f"local.get {index}"
+                return f"local.get {local_index}"
 
             def get_byte_code_size(self):
                 return 2
 
         return LocalGet
 
-    def create_local_set_tee_tile(self, index, create_local: bool = False, is_tee: bool = False):
+    def create_local_set_tee_tile(self, local_index, create_local: bool = False, is_tee: bool = False):
         """Used for creating local set tiles"""
 
         class LocalTeeSet(AbstractTile):
             name = f"{'Set' if not is_tee else 'Tee'} local"
+            index = local_index
 
             def __init__(self, seed: int):
 
                 super().__init__(seed)
-                self.index = index
+                self.index = local_index
                 self.create_local = create_local
 
             @staticmethod
@@ -105,10 +107,10 @@ class AbstractLocalFactory(AbstractTileFactory):
                 if len(current_state.stack.get_current_frame().stack) < 1:
                     return False
                 if not create_local:
-                    return isinstance(current_state.stack.get_current_frame().stack[-1], current_function.local_types[index])
+                    return isinstance(current_state.stack.get_current_frame().stack[-1], current_function.local_types[local_index])
                 else:
-                    if len(current_function.local_types) > index:
-                        return isinstance(current_state.stack.get_current_frame().stack[-1], current_function.local_types[index]) and MAX_LOCALS_PER_FUNCTION > len(current_state.stack.get_current_frame().locals)
+                    if len(current_function.local_types) > local_index:
+                        return isinstance(current_state.stack.get_current_frame().stack[-1], current_function.local_types[local_index]) and MAX_LOCALS_PER_FUNCTION > len(current_state.stack.get_current_frame().locals)
                     else:
                         return MAX_LOCALS_PER_FUNCTION > len(current_state.stack.get_current_frame().locals)
 
@@ -130,13 +132,13 @@ class AbstractLocalFactory(AbstractTileFactory):
 
                     value = current_state.stack.get_current_frame().stack_pop() if not is_tee else \
                         current_state.stack.get_current_frame().stack[-1]
-                    current_state.stack.get_current_frame().locals[index] = value
+                    current_state.stack.get_current_frame().locals[local_index] = value
 
             def generate_code(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> str:
                 if not is_tee:
-                    return f"local.set {index}"
+                    return f"local.set {local_index}"
                 else:
-                    return f"local.tee {index}"
+                    return f"local.tee {local_index}"
 
             def get_byte_code_size(self):
                 return 2

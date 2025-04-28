@@ -3,7 +3,10 @@ import random
 import uuid
 from typing import Type, List
 
-from core.config.config import MAX_FUNCTIONS_PER_MODULE, MAX_BLOCKS_PER_FUNCTION
+from core.config.config import MAX_FUNCTIONS_PER_MODULE, MAX_BLOCKS_PER_FUNCTION, FUNCTIONS_MIN_FUEL_AVAILABLE, \
+    FUNCTIONS_MIN_BYTECODE_AVAILABLE, MAX_FUNCTION_INPUTS, MAX_FUNCTION_OUTPUTS, BLOCKS_MIN_FUEL_AVAILABLE, \
+    BLOCKS_MIN_BYTECODE_AVAILABLE, MAX_BLOCK_OUTPUTS, MAX_BLOCK_INPUTS, IF_ELSE_MIN_FUEL_AVAILABLE, \
+    IF_ELSE_MIN_BYTECODE_AVAILABLE, MAX_IF_ELSE_INPUTS, MAX_IF_ELSE_OUTPUTS
 from core.constraints import FuelConstraint, ByteCodeSizeConstraint
 from core.formater import indent_code
 from core.state.functions import Function, Block
@@ -60,7 +63,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
     def create_function_create_tile(self, global_state: GlobalState, is_external=False) -> Type[AbstractTile]:
         name = generate_random_function_name(global_state)
         tile_loader = self.tile_loader
-        tile = type(f"CreateFunctionTile", (AbstractTile,), {})
+        tile = type(f"CreateFunctionTile", (AbstractTile,), {"index": len(global_state.functions)})
         tile.name = f"Create and call function"
         function = None
 
@@ -71,7 +74,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
             if function is None:
                 return len(
                     current_state.functions) < MAX_FUNCTIONS_PER_MODULE and current_state.constraints.remaining_resources(
-                    FuelConstraint) >= 10 and current_state.constraints.remaining_resources(ByteCodeSizeConstraint) >= 10
+                    FuelConstraint) >= FUNCTIONS_MIN_FUEL_AVAILABLE and current_state.constraints.remaining_resources(ByteCodeSizeConstraint) >= FUNCTIONS_MIN_BYTECODE_AVAILABLE
 
             # Same from here as in call tile function
             return self.create_function_call_tile(function).can_be_placed(current_state, current_function, current_blocks)
@@ -79,13 +82,14 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         def apply(self, current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
             nonlocal function
             if function is None:
-                forced_output_type_len = random.randint(0, 2)
+                forced_inputs = [type(stack_var) for stack_var in
+                                   current_state.stack.get_current_frame().stack_peek_n_in_order(
+                                       random.randint(0, min(len(current_state.stack.get_current_frame().stack), MAX_FUNCTION_INPUTS)))]
+                forced_output_type_len = random.randint(0, min(len(forced_inputs),MAX_FUNCTION_OUTPUTS))
                 forced_output_types = [type(get_random_val()) for _ in range(0, forced_output_type_len)]
                 generate_function(tile_loader,
                                   name,
-                                  [type(stack_var) for stack_var in
-                                   current_state.stack.get_current_frame().stack_peek_n_in_order(
-                                       random.randint(0, len(current_state.stack.get_current_frame().stack)))],
+                                  forced_inputs,
                                   is_external,
                                   current_state,
                                   is_entry=False,selection_strategy=current_function.selection_strategy,
@@ -124,7 +128,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
 
     def create_function_call_tile(self, function: Function) -> Type[AbstractTile]:
         """Returns a tile that represents the function"""
-        tile = type(f"FunctionCallTile", (AbstractTile,), {})
+        tile = type(f"FunctionCallTile", (AbstractTile,), {"index": function.index})
         tile.name = f"Call function"
 
         def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -197,10 +201,9 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
         tile.generate_code = generate_code
         return tile
 
-
     def create_function_indirect_call_tile(self, function: Function, table_name: str, elem_index: int) -> Type[AbstractTile]:
         """Returns a tile that represents the function"""
-        tile = type(f"FunctionIndirectCallTile", (AbstractTile,), {})
+        tile = type(f"FunctionIndirectCallTile", (AbstractTile,), {"index": function.index})
         tile.name = f"Indirect call function"
 
         def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -275,7 +278,7 @@ class AbstractFunctionTileFactory(AbstractTileFactory):
 
     def create_function_ref_to_stack_tile(self, function: Function) -> Type[AbstractTile]:
         """Returns a tile that represents the function"""
-        tile = type(f"FunctionRefToStackTile", (AbstractTile,), {})
+        tile = type(f"FunctionRefToStackTile", (AbstractTile,), {"index": function.index})
         tile.name = f"Push function reference to stack"
 
         def function_can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -337,14 +340,14 @@ class AbstractBlockTileFactory(AbstractTileFactory):
     def generate_all_placeable_tiles(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]):
         """Generates all possible tiles"""
         block_tiles = []
-        block_tile = self.create_block_tile(global_state)
+        block_tile = self.create_block_tile(global_state, current_function, current_blocks)
         if block_tile.can_be_placed(global_state, current_function, current_blocks):
             block_tiles.append(block_tile)
         return block_tiles
 
-    def create_block_tile(self, global_state: GlobalState) -> Type[AbstractTile]:
+    def create_block_tile(self, global_state: GlobalState, current_function: Function, current_blocks: List[Block]) -> Type[AbstractTile]:
 
-        tile = type(f"BlockTile", (AbstractTile,), {"block": None})
+        tile = type(f"BlockTile", (AbstractTile,), {"block": None, "index": len(current_function.blocks)})
         tile.name = f"Create block"
         tile_loader = self.tile_loader
 
@@ -355,8 +358,8 @@ class AbstractBlockTileFactory(AbstractTileFactory):
             nonlocal tile
             if tile.block is None:
                 if current_state.constraints.remaining_resources(
-                        FuelConstraint) >= 10 and current_state.constraints.remaining_resources(
-                    ByteCodeSizeConstraint) >= 10:
+                        FuelConstraint) >= BLOCKS_MIN_FUEL_AVAILABLE and current_state.constraints.remaining_resources(
+                    ByteCodeSizeConstraint) >= BLOCKS_MIN_BYTECODE_AVAILABLE:
                     return True
                 if tile.block is None and MAX_BLOCKS_PER_FUNCTION <= len(current_function.blocks):
                     return False
@@ -384,13 +387,14 @@ class AbstractBlockTileFactory(AbstractTileFactory):
             nonlocal tile, tile_loader
             if tile.block is None:
                 tile.name = generate_random_block_name(current_function)
-                forced_output_type_len = random.randint(0, 2)
-                forced_output_types = [type(get_random_val()) for _ in range(0, forced_output_type_len)]
-                tile.block = generate_block(tile_loader, global_state, current_function,
-                                            [type(stack_var) for stack_var in
+                forced_inputs = [type(stack_var) for stack_var in
                                              current_state.stack.get_current_frame().stack_peek_n_in_order(
                                                  min(2, random.randint(0,
-                                                                       len(current_state.stack.get_current_frame().stack))))],
+                                                                       min(MAX_BLOCK_INPUTS,len(current_state.stack.get_current_frame().stack)))))]
+                forced_output_type_len = random.randint(0, min(len(forced_inputs), MAX_BLOCK_OUTPUTS))
+                forced_output_types = [type(get_random_val()) for _ in range(0, forced_output_type_len)]
+                tile.block = generate_block(tile_loader, global_state, current_function,
+                                            forced_inputs,
                                             tile.name, fixed_output_types=forced_output_types, blocks=current_blocks)
                 tile.generate_code = tile.block.generate_code
                 tile.get_byte_code_size = tile.block.get_byte_code_size
@@ -422,7 +426,7 @@ class ConditionTileFactory(AbstractTileFactory):
     def create_block_tile(self, global_state: GlobalState) -> Type[AbstractTile]:
 
         tile = type(f"ConditionTile", (AbstractTile,), {"if_block": None, "else_block": None})
-        tile.name = f"Create condition"
+        tile.name = f"Create conditional"
         tile_loader = self.tile_loader
 
         def can_be_placed(current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
@@ -440,7 +444,7 @@ class ConditionTileFactory(AbstractTileFactory):
                 return False
             #Make sure there is enough space for the block
             if tile.if_block is None and current_state.constraints.remaining_resources(
-                    FuelConstraint) >= 10 and current_state.constraints.remaining_resources(ByteCodeSizeConstraint) >= 10:
+                    FuelConstraint) >= IF_ELSE_MIN_FUEL_AVAILABLE and current_state.constraints.remaining_resources(ByteCodeSizeConstraint) >= IF_ELSE_MIN_BYTECODE_AVAILABLE:
                 return True
 
             if tile.if_block is None:
@@ -476,10 +480,10 @@ class ConditionTileFactory(AbstractTileFactory):
             if tile.if_block is None:
                 tile.name = generate_random_condition_name(current_function)
                 #Generate both blocks at the same time
-                n_inputs = random.randint(0, min(2, len(current_state.stack.get_current_frame().stack)))
+                n_inputs = random.randint(0, min(MAX_IF_ELSE_INPUTS, len(current_state.stack.get_current_frame().stack)))
                 input_types = [type(stack_var) for stack_var in
                                current_state.stack.get_current_frame().stack_peek_n_in_order(n_inputs)]
-                forced_output_types = [type(get_random_val()) for _ in range(0, len(input_types))]  # Change output type of if block
+                forced_output_types = [type(get_random_val()) for _ in range(0, min(MAX_IF_ELSE_OUTPUTS, len(input_types)))]  # Change output type of if block
                 old_globals = {}
                 for global_var in current_state.globals.globals:
                     old_globals[global_var.name] = copy.deepcopy(global_var)

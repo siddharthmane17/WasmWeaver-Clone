@@ -665,4 +665,3 @@ class Float64Load(AbstractTile):
 
     def get_byte_code_size(self):
         return 2
-

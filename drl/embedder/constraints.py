@@ -1,33 +1,46 @@
 from typing import List
-import numpy as np
-import torch
+from gymnasium.spaces import Sequence, Dict, Box, Discrete
 
+from core.config.config import MAX_CONSTRAINTS
 from core.constraints import AbstractConstraint, FuelConstraint, ByteCodeSizeConstraint
 
 
 class ConstraintsEmbedder:
 
-    def embed_constraint(self, constraint: AbstractConstraint):
-
-        a = np.clip((constraint.resource - constraint.min_target) / (constraint.max_target - constraint.min_target),0,1)
-        so = max(0, (constraint.resource-constraint.max_target)/(constraint.max_target - constraint.min_target))
-        su = max(0, (constraint.min_target-constraint.resource)/(constraint.max_target - constraint.min_target))
-        b = constraint.is_violated() or not constraint.is_fulfilled()
-        return torch.tensor([a,so, su, b])
-
+    def get_space(self):
+        return Sequence(Dict({"index":Discrete(MAX_CONSTRAINTS),
+                              "type": Discrete(MAX_CONSTRAINTS),
+                              "min": Box(low=0, high=1000000, shape=()),
+                              "max": Box(low=0, high=1000000, shape=()),
+                              "value": Box(low=0, high=100000, shape=())
+                              }))
 
     def __call__(self, constraints: List[AbstractConstraint]):
-        combined_embedding = torch.zeros(0)
-        for constraint in constraints:
-            embedding = self.embed_constraint(constraint)
-            combined_embedding = torch.cat((combined_embedding, embedding), dim=0)
-        #Make sure, that the output is float32
-        return combined_embedding.to(torch.float32)
+        constraints_list = []
+        for index, constraint in enumerate(constraints):
+            if isinstance(constraint, FuelConstraint):
+                constraint_type = 0
+            elif isinstance(constraint, ByteCodeSizeConstraint):
+                constraint_type = 1
+            else:
+                raise ValueError("Unknown constraint type")
+
+            constraints_list.append({
+                "index": int(index),
+                "type": int(constraint_type),
+                "min": float(constraint.min_target),
+                "max": float(constraint.max_target),
+                "value": float(constraint.resource)
+            })
+
+        return tuple(constraints_list)
+
+
 
 
 if __name__ == "__main__":
     constraints = [FuelConstraint(50, 100, 100), ByteCodeSizeConstraint(0, 200, 300)]
     embedder = ConstraintsEmbedder()
     embedding = embedder(constraints)
-    print(embedding.shape)
-    print(embedding)
+    print(embedder.get_space().contains(embedding))
+    print(embedder.get_space())
