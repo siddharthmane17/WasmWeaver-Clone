@@ -1,0 +1,40 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+
+# macOS system files
+.DS_Store
+
+# VS Code workspace settings
+.vscode/
+
+# Python virtual environments
+venv/
+.venv/
+.env/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# TensorBoard logs and checkpoints
+wasmweaver_tensorboard/
+*.tfevents.*
+
+# Compiled objects and binaries
+*.o
+*.out
+*.so
+*.dll
+*.a
+
+# Model files and zipped agents
+*.zip
+*.pt
+*.pth
+
+# Cache from tools
+.cache/
