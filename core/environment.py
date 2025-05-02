@@ -1,4 +1,3 @@
-import random
 import threading
 from typing import Any, SupportsFloat, List, Type
 
@@ -6,9 +5,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import Space
 from gymnasium.core import ObsType, ActType
-from gymnasium.spaces import Dict, Box
-from gymnasium.spaces.space import T_cov
-from ray.rllib.env import EnvContext
+from gymnasium.spaces import Dict, Box, Discrete
 
 from core.constraints import AbstractConstraint, ByteCodeSizeConstraint, FuelConstraint, ConstraintsViolatedError
 from core.loader import TileLoader
@@ -26,21 +23,13 @@ from drl.embedder.tiles import TilesEmbedder
 EXCEPTION = -1
 FINISHED_SUCCESS = 1
 
-
 class EnvSelectionStrategy(AbstractSelectionStrategy):
-    """
-    Random selection strategy.
-    """
-
     def __init__(self, env: "WasmWeaverEnv"):
         self.env = env
 
-    name = "EnvSelectionStrategy"  # This is the name of the strategy
+    name = "EnvSelectionStrategy"
 
     def get_weight(self, tile: Type["AbstractTile"], current_state: GlobalState, current_function: Function, current_blocks: List[Block]):
-        """
-        Returns a random weight for the tile.
-        """
         if self.env.finish_thread:
             raise Exception("Thread was reset!")
         self.env.current_state = current_state
@@ -49,25 +38,11 @@ class EnvSelectionStrategy(AbstractSelectionStrategy):
         self.env.current_tile = tile
         self.env.global_state_ready.release()
         self.env.action_ready.acquire()
-        return self.env.selected_weight
-
-
-class ObjectSpace(Space):
-    def __init__(self, cls: type | tuple[type, ...] | None = None):
-        #  shape=()  → scalar (one object per env)
-        #  dtype=object  → NumPy will store just the reference
-        super().__init__(shape=(1,), dtype=np.object_)
-        self._cls = cls
-
-    def contains(self, x) -> bool:              # called by RLlib checks
-        return self._cls is None or isinstance(x, self._cls)
-
-    # Not used by RLlib but keeps the API complete
-    def sample(self, mask: Any | None = None) -> T_cov:
-        raise NotImplementedError("Cannot sample an arbitrary object.")
+        if tile == self.env.selected_tile:
+            return 1.0
+        return 0.0
 
 class WasmWeaverEnv(gym.Env):
-
     def __init__(self, constraints: List[AbstractConstraint], input_types: List[Type[Val]] = None, output_types: List[Val] = None):
         super(WasmWeaverEnv, self).__init__()
 
@@ -76,43 +51,45 @@ class WasmWeaverEnv(gym.Env):
         self.constraints_embedder = ConstraintsEmbedder()
         self.tiles_embedder = TilesEmbedder()
 
-        if input_types is None:
-            self.input_types = []
-        else:
-            self.input_types = input_types
+        self.tile_loader = TileLoader("core/instructions/")
+        self.tiles = list(self.tile_loader.tiles)
 
-        if output_types is None:
-            self.output_types = []
-        else:
-            self.output_types = output_types
+        self.input_types = input_types or []
+        self.output_types = output_types or []
 
-        self.action_space = gym.spaces.Box(low=0, high=1, shape=())
-        self.observation_space = Dict({
-           "current_function":self.function_embedder.get_space(),
-           "current_stack":self.stack_embedder.get_space(),
-           "constraints": self.constraints_embedder.get_space(),
-           "tile":self.tiles_embedder.get_space()
-        })
+        self.action_space = Discrete(len(self.tiles))
+
+        # All embeddings flattened
+        function_space = self.function_embedder.get_space()
+        stack_space = self.stack_embedder.get_space()
+        constraints_space = self.constraints_embedder.get_space()
+        tile_space = self.tiles_embedder.get_space()
+
+        flat_dim = (
+            function_space.shape[0]
+            + stack_space.shape[0]
+            + constraints_space.shape[0]
+            + tile_space.shape[0]
+        )
+        self.observation_space = Box(low=-np.inf, high=np.inf, shape=(flat_dim,), dtype=np.float32)
+
         self.constraints: List[AbstractConstraint] = constraints
         self.global_state_ready = threading.Semaphore(0)
         self.action_ready = threading.Semaphore(0)
+
         self.current_state: GlobalState | None = None
         self.current_tile: Type[AbstractTile] | None = None
         self.current_function: Function | None = None
         self.current_blocks: List[Block] | None = None
+
+        self.selected_tile: Type[AbstractTile] | None = None
         self.selected_weight: float = 0
         self.thread: threading.Thread | None = None
-        self.tile_loader = TileLoader("core/instructions/")
         self.finish_state = None
         self.finish_thread = False
 
-
-
-
-
     def __getstate__(self):
         state = self.__dict__.copy()
-        # Remove the thread from the state
         del state['thread']
         del state['global_state_ready']
         del state['action_ready']
@@ -120,31 +97,29 @@ class WasmWeaverEnv(gym.Env):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        # Recreate the semaphores
         self.global_state_ready = threading.Semaphore(0)
         self.action_ready = threading.Semaphore(0)
-        # Recreate the thread
         self.thread = None
 
     def generate(self):
         try:
-            generate_function(self.tile_loader,
-                        "run",
-                              self.input_types,
-                              False,
-                              self.init_state,
-                              is_entry=True,
-                              selection_strategy=EnvSelectionStrategy(self),
-                              fixed_output_types=self.output_types
-                              )
+            generate_function(
+                self.tile_loader,
+                "run",
+                self.input_types,
+                False,
+                self.init_state,
+                is_entry=True,
+                selection_strategy=EnvSelectionStrategy(self),
+                fixed_output_types=self.output_types
+            )
             self.finish_state = "Success"
-            self.global_state_ready.release()
         except ConstraintsViolatedError as e:
             self.finish_state = e
-            self.global_state_ready.release()
         except Exception as e:
-            raise e
             self.finish_state = e
+            raise e
+        finally:
             self.global_state_ready.release()
 
     def _init_state(self):
@@ -153,28 +128,40 @@ class WasmWeaverEnv(gym.Env):
             self.global_state_ready.release()
             self.thread.join(timeout=1)
             self.finish_thread = False
+
         self.init_state = GlobalState()
         for constraint in self.constraints:
-            # Reset constraints
             constraint.reset()
             self.init_state.constraints.add(constraint)
+
         self.init_state.stack.push_frame(params=None, stack=[], name="origin")
+        self.selected_tile = None
         self.selected_weight = 0
         self.finish_state = None
+
         self.global_state_ready = threading.Semaphore(0)
         self.action_ready = threading.Semaphore(0)
+
         self.thread = threading.Thread(target=self.generate, daemon=True)
         self.thread.start()
 
-    def step(
-            self, action: ActType
-    ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
-        self.selected_weight = float(action)
+    def _get_flat_obs(self):
+        return np.concatenate([
+            self.function_embedder(self.current_function),
+            self.stack_embedder(self.current_state.stack),
+            self.constraints_embedder(self.current_state.constraints.constraints),
+            self.tiles_embedder(self.current_tile)
+        ]).astype(np.float32)
+
+    def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
+        self.selected_tile = self.tiles[action]
         self.action_ready.release()
         self.global_state_ready.acquire()
+
         done = False
         truncated = False
         reward = 0
+
         if isinstance(self.finish_state, Exception):
             reward = EXCEPTION
             done = True
@@ -182,99 +169,12 @@ class WasmWeaverEnv(gym.Env):
             reward = FINISHED_SUCCESS
             done = True
 
-        state = {
-           "current_function":self.function_embedder(self.current_function),
-           "current_stack":self.stack_embedder(self.current_state.stack),
-           "constraints": self.constraints_embedder(self.current_state.constraints.constraints),
-           "tile":self.tiles_embedder(self.current_tile)
-        }
+        obs = self._get_flat_obs()
 
-        if not self.observation_space.contains(state):
-            # Check all spaces
-            if self.function_embedder.get_space().contains(self.function_embedder(self.current_function)):
-                print("Function embedder ok!")
-            else:
-                print("Function embedder failed!")
-                print(self.function_embedder(self.current_function))
+        return obs, reward, done, truncated, {}
 
-            if self.stack_embedder.get_space().contains(self.stack_embedder(self.current_state.stack)):
-                print("Stack embedder ok!")
-            else:
-                print("Stack embedder failed!")
-                print(self.stack_embedder(self.current_state.stack))
-
-            if self.constraints_embedder.get_space().contains(
-                    self.constraints_embedder(self.current_state.constraints.constraints)):
-                print("Constraints embedder ok!")
-            else:
-                print("Constraints embedder failed!")
-                print(self.constraints_embedder(self.current_state.constraints.constraints))
-
-            if self.tiles_embedder.get_space().contains(self.tiles_embedder(self.current_tile)):
-                print("Tiles embedder ok!")
-            else:
-                print("Tiles embedder failed!")
-                print(self.tiles_embedder(self.current_tile))
-
-            raise Exception(f"Observation is not valid")
-
-        return (state,
-                reward,
-                done,
-                truncated,
-                {})
-
-    def reset(
-            self,
-            *,
-            seed: int | None = None,
-            options: dict[str, Any] | None = None,
-    ) -> tuple[ObsType, dict[str, Any]]:
-
+    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[ObsType, dict[str, Any]]:
         super().reset(seed=seed)
-
         self._init_state()
-
-        print(self.global_state_ready._value)
-
         self.global_state_ready.acquire()
-
-        state = {
-           "current_function":self.function_embedder(self.current_function),
-           "current_stack":self.stack_embedder(self.current_state.stack),
-           "constraints": self.constraints_embedder(self.current_state.constraints.constraints),
-           "tile":self.tiles_embedder(self.current_tile)
-        }
-
-        if not self.observation_space.contains(state):
-            #Check all spaces
-            if self.function_embedder.get_space().contains(self.function_embedder(self.current_function)):
-                print("Function embedder ok!")
-            else:
-                print("Function embedder failed!")
-                print(self.function_embedder(self.current_function))
-
-            if self.stack_embedder.get_space().contains(self.stack_embedder(self.current_state.stack)):
-                print("Stack embedder ok!")
-            else:
-                print("Stack embedder failed!")
-                print(self.stack_embedder(self.current_state.stack))
-
-            if self.constraints_embedder.get_space().contains(self.constraints_embedder(self.current_state.constraints.constraints)):
-                print("Constraints embedder ok!")
-            else:
-                print("Constraints embedder failed!")
-                print(self.constraints_embedder(self.current_state.constraints.constraints))
-
-            if self.tiles_embedder.get_space().contains(self.tiles_embedder(self.current_tile)):
-                print("Tiles embedder ok!")
-            else:
-                print("Tiles embedder failed!")
-                print(self.tiles_embedder(self.current_tile))
-
-            raise Exception(f"Observation is not valid")
-
-        return (state,
-                {})
-
-
+        return self._get_flat_obs(), {}

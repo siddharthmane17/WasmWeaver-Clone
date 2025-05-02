@@ -1,5 +1,5 @@
 import numpy as np
-from gymnasium.spaces import Dict, MultiDiscrete, Box
+from gymnasium.spaces import Box
 import math
 import sys
 from core.config.config import MAX_STACK_SIZE
@@ -7,7 +7,7 @@ from core.state.stack import Stack, StackFrame
 from core.value import I32, I64, F32, F64, RefFunc
 from drl.embedder.values import embedd_value_type, MAX_VALUE_TYPE_INDEX
 
-_LOG_MAX64 = math.log1p(sys.float_info.max)  # ≈ 709.7827  (float64, well inside range)
+_LOG_MAX64 = math.log1p(sys.float_info.max)  # ≈ 709.7827
 
 
 def symlog_to_unit(x):
@@ -20,59 +20,52 @@ def symlog_to_unit(x):
     y = np.where(nan_mask, 0.0, y)
     return y.astype(np.float32, copy=False)
 
+
 class StackEmbedder:
     def __init__(self):
-        ...
+        self.stack_size = MAX_STACK_SIZE
+        self.flat_dim = 3 * self.stack_size  # ids, args, mask
 
     def get_space(self):
-        return Dict({
-            "ids": MultiDiscrete([MAX_VALUE_TYPE_INDEX+1]*MAX_STACK_SIZE, dtype=np.int32),
-            "args": Box(low=-1, high=100, shape=(MAX_STACK_SIZE,), dtype=np.float32),
-            "mask": MultiDiscrete([2]*MAX_STACK_SIZE, dtype=np.int32)
-        })
+        return Box(low=-1, high=1, shape=(self.flat_dim,), dtype=np.float32)
 
     def __call__(self, stack: Stack):
         current_stack_frame = stack.get_current_frame()
         stack_values = current_stack_frame.stack
-        id_tensor = np.zeros(MAX_STACK_SIZE, dtype=np.int32)
-        values_tensor = np.zeros(MAX_STACK_SIZE, dtype=np.float32)
-        mask = np.zeros(MAX_STACK_SIZE, dtype=np.int32)
+
+        id_tensor = np.zeros(self.stack_size, dtype=np.float32)
+        values_tensor = np.zeros(self.stack_size, dtype=np.float32)
+        mask_tensor = np.zeros(self.stack_size, dtype=np.float32)
+
         for i, value in enumerate(stack_values):
-            id_tensor[i] = embedd_value_type(value)
-            if isinstance(value, I32):
+            if i >= self.stack_size:
+                break
+
+            id_tensor[i] = embedd_value_type(value) / MAX_VALUE_TYPE_INDEX
+            mask_tensor[i] = 1.0
+
+            if isinstance(value, (I32, I64, F32, F64)):
                 values_tensor[i] = symlog_to_unit(value.value)
-                mask[i] = 1
-            elif isinstance(value, I64):
-                values_tensor[i] = symlog_to_unit(value.value)
-                mask[i] = 1
-            elif isinstance(value, F32):
-                values_tensor[i] = symlog_to_unit(value.value)
-                mask[i] = 1
-            elif isinstance(value, F64):
-                values_tensor[i] = symlog_to_unit(value.value)
-                mask[i] = 1
             elif isinstance(value, RefFunc):
-                if value.value is None:
-                    values_tensor[i] = -1
-                else:
-                    values_tensor[i] = value.value.index #Its a function
-                mask[i] = 1
+                values_tensor[i] = -1.0 if value.value is None else float(value.value.index)
             else:
                 raise ValueError(f"Unknown value type: {type(value)}")
 
-        return {"ids": id_tensor, "args": values_tensor, "mask": mask}
+        # Return flat vector
+        return np.concatenate([id_tensor, values_tensor, mask_tensor]).astype(np.float32)
+
 
 if __name__ == "__main__":
     stack = Stack()
-    stack.stack_frames.append(StackFrame())
-    stack.stack_frames[0].stack_push(I32(1))
-    stack.stack_frames[0].stack_push(I64(2))
-    stack.stack_frames[0].stack_push(F32(3.0))
-    stack.stack_frames[0].stack_push(F64(4.0))
+    frame = StackFrame()
+    frame.stack_push(I32(1))
+    frame.stack_push(I64(2))
+    frame.stack_push(F32(3.0))
+    frame.stack_push(F64(4.0))
+    stack.stack_frames.append(frame)
 
     stack_embedder = StackEmbedder()
     embedding = stack_embedder(stack)
-    print(stack_embedder.get_space().contains(embedding))
-    print(stack_embedder.get_space().sample())
-    print(embedding)
-
+    print("Inside space:", stack_embedder.get_space().contains(embedding))
+    print("Embedding shape:", embedding.shape)
+    print("Embedding:", embedding)
