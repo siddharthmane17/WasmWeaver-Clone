@@ -13,31 +13,23 @@ class TilesEmbedder:
         self.max_arg = MAX_ARG_VALUE
 
     def get_space(self):
-        return Box(low=0.0, high=1.0, shape=(2,), dtype=np.float32)
+        return Box(low=0.0, high=1.0, shape=(self.max_id + 1,), dtype=np.float32)
 
     def __call__(self, tile: AbstractTile):
         tile_id = self.get_id(tile)
-        tile_arg = self.get_args(tile)
+        tile_id_onehot = np.zeros(self.max_id, dtype=np.float32)
+        tile_id_onehot[tile_id] = 1.0
 
-        # Normalize to [0, 1]
-        id_norm = tile_id / self.max_id
-        arg_norm = tile_arg / self.max_arg
-
-        return np.array([id_norm, arg_norm], dtype=np.float32)
+        tile_arg = self.get_args(tile) / self.max_arg
+        return np.concatenate([tile_id_onehot, [tile_arg]]).astype(np.float32)
 
     def get_id(self, tile: AbstractTile | Type[AbstractTile]):
         name = tile.name
-        # Optional debug
-        # print(f"[DEBUG] Matching tile name: '{name}'")
-
         match name:
-            # Previously missing (now added)
             case "F32Const": return 80
             case "F64Const": return 120
             case "I32Const": return 160
             case "Get global": return 290
-
-            # Existing examples
             case "Finish": return 5
             case "NoOp": return 10
             case "Drop": return 11
@@ -50,9 +42,7 @@ class TilesEmbedder:
             case "Set global": return 291
             case "Memory size": return 300
             case "Get table": return 310
-
-            # Fallback for any unknown tile
-            case _:
+            case _: 
                 print(f"[WARN] Unknown tile name: {name}. Returning fallback ID 0.")
                 return 0
 

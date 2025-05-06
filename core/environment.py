@@ -3,9 +3,8 @@ from typing import Any, SupportsFloat, List, Type
 
 import gymnasium as gym
 import numpy as np
-from gymnasium import Space
 from gymnasium.core import ObsType, ActType
-from gymnasium.spaces import Dict, Box, Discrete
+from gymnasium.spaces import Box, Discrete
 
 from core.constraints import AbstractConstraint, ByteCodeSizeConstraint, FuelConstraint, ConstraintsViolatedError
 from core.loader import TileLoader
@@ -66,10 +65,10 @@ class WasmWeaverEnv(gym.Env):
         tile_space = self.tiles_embedder.get_space()
 
         flat_dim = (
-            function_space.shape[0]
-            + stack_space.shape[0]
-            + constraints_space.shape[0]
-            + tile_space.shape[0]
+            stack_space.shape[0] +
+            function_space.shape[0] +
+            constraints_space.shape[0] +
+            tile_space.shape[0]
         )
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=(flat_dim,), dtype=np.float32)
 
@@ -146,11 +145,17 @@ class WasmWeaverEnv(gym.Env):
         self.thread.start()
 
     def _get_flat_obs(self):
+        # New order: Stack → Function → Constraints → Tile (one-hot + arg)
+        stack_embedding = self.stack_embedder(self.current_state.stack)
+        function_embedding = self.function_embedder(self.current_function)
+        constraints_embedding = self.constraints_embedder(self.current_state.constraints.constraints)
+        tile_embedding = self.tiles_embedder(self.current_tile)
+
         return np.concatenate([
-            self.function_embedder(self.current_function),
-            self.stack_embedder(self.current_state.stack),
-            self.constraints_embedder(self.current_state.constraints.constraints),
-            self.tiles_embedder(self.current_tile)
+            stack_embedding,
+            function_embedding,
+            constraints_embedding,
+            tile_embedding
         ]).astype(np.float32)
 
     def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
@@ -170,7 +175,6 @@ class WasmWeaverEnv(gym.Env):
             done = True
 
         obs = self._get_flat_obs()
-
         return obs, reward, done, truncated, {}
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[ObsType, dict[str, Any]]:
