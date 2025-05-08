@@ -88,9 +88,8 @@ class WasmWeaverEnv(gym.Env):
         self.finish_state = None
         self.finish_thread = False
 
-        self.current_step = 0  # Track step count
+        self.current_step = 0
 
-        # TensorBoard logging for stack/tile metrics
         self.writer = SummaryWriter(log_dir="./wasmweaver_tensorboard/env_metrics")
         self.episode_stack_sizes = []
         self.episode_tile_counts = {}
@@ -172,32 +171,39 @@ class WasmWeaverEnv(gym.Env):
         truncated = False
         reward = 0.0
 
+        tile_name = self.selected_tile.name
+        stack_depth = len(self.current_state.stack.get_current_frame().stack)
+
+        # Base reward logic
         if isinstance(self.finish_state, Exception):
             reward = -1.0
             done = True
+
         elif self.finish_state == "Success":
-            reward = 1.0
+            unique_tiles = len(set(self.episode_tile_counts))
+            reward = 1.0 + 0.1 * unique_tiles
             done = True
+
         else:
-            # Reward shaping for learning signals
-            if self.selected_tile.name != "NoOp":
-                reward += 0.01
-            if len(self.current_state.stack.get_current_frame().stack) > 0:
-                reward += 0.02
-            if self.selected_tile.name == "NoOp":
+            if tile_name == "NoOp":
                 reward -= 0.01
+            else:
+                reward += 0.02
 
-        # Track metrics
-        stack_size = len(self.current_state.stack.get_current_frame().stack)
+            reward += 0.001 * stack_depth
 
-        self.episode_stack_sizes.append(stack_size)
+            if tile_name in self.episode_tile_counts and self.episode_tile_counts[tile_name] > 3:
+                reward -= 0.02
 
-        tile_name = self.selected_tile.name
+        # Track episode stats
+        self.episode_stack_sizes.append(stack_depth)
         self.episode_tile_counts[tile_name] = self.episode_tile_counts.get(tile_name, 0) + 1
 
         if done:
             avg_stack = np.mean(self.episode_stack_sizes)
             self.writer.add_scalar("env/avg_stack_size", avg_stack, self.episode_counter)
+            self.writer.add_scalar("env/unique_tiles_used", len(set(self.episode_tile_counts)), self.episode_counter)
+            self.writer.add_scalar("env/final_stack_depth", stack_depth, self.episode_counter)
 
             for tile, count in self.episode_tile_counts.items():
                 self.writer.add_scalar(f"tiles/{tile}", count, self.episode_counter)
@@ -207,13 +213,9 @@ class WasmWeaverEnv(gym.Env):
             self.episode_tile_counts = {}
 
         obs = self._get_flat_obs()
-
         info = {}
         if done:
-            info["episode"] = {
-                "r": reward,
-                "l": self.current_step
-            }
+            info["episode"] = {"r": reward, "l": self.current_step}
 
         return obs, reward, done, truncated, info
 
@@ -222,4 +224,4 @@ class WasmWeaverEnv(gym.Env):
         self._init_state()
         self.current_step = 0
         self.global_state_ready.acquire()
-        return self._get_flat_obs(), {}
+        return self._get_flat_obs(), { }
