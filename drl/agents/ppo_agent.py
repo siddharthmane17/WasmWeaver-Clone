@@ -11,7 +11,7 @@ constraints = [
     ByteCodeSizeConstraint(min_target=100, max_target=200, initial=100)
 ]
 
-# 2. Wrap the environment in Monitor for TensorBoard logging
+# 2. Wrapping the environment in Monitor for TensorBoard logging
 env = DummyVecEnv([lambda: Monitor(WasmWeaverEnv(constraints=constraints))])
 
 # 3. Define policy_kwargs for custom feature extractor
@@ -24,7 +24,7 @@ policy_kwargs = dict(
     ),
 )
 
-# 4. Create PPO model with tensorboard logging
+
 model = PPO(
     policy="MlpPolicy",
     env=env,
@@ -34,8 +34,8 @@ model = PPO(
 )
 
 # 5. Train the agent
-model.learn(total_timesteps=200_00)  # You can increase this later
+model.learn(total_timesteps=200_00)  
 
-# 6. Save the trained model
+# 6. Saving trained model
 model.save("ppo_wasmweaver_model")
 print("PPO agent trained and saved!")
