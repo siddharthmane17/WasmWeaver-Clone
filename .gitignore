@@ -38,3 +38,7 @@ wasmweaver_tensorboard/
 
 # Cache from tools
 .cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
