@@ -22,7 +22,8 @@ def symlog_to_unit(x):
 class StackEmbedder:
     def __init__(self):
         self.stack_size = MAX_STACK_SIZE
-        self.flat_dim = 3 * self.stack_size
+        self.stack_embed_dim = 4  # Now 4 values per entry
+        self.flat_dim = self.stack_embed_dim * self.stack_size
 
     def get_space(self):
         return Box(low=-1, high=1, shape=(self.flat_dim,), dtype=np.float32)
@@ -34,6 +35,7 @@ class StackEmbedder:
         id_tensor = np.zeros(self.stack_size, dtype=np.float32)
         values_tensor = np.zeros(self.stack_size, dtype=np.float32)
         mask_tensor = np.zeros(self.stack_size, dtype=np.float32)
+        pad_tensor = np.zeros(self.stack_size, dtype=np.float32)  # Placeholder padding
 
         for i, value in enumerate(stack_values):
             if i >= self.stack_size:
@@ -48,4 +50,7 @@ class StackEmbedder:
             else:
                 raise ValueError(f"Unknown value type: {type(value)}")
 
-        return np.concatenate([id_tensor, values_tensor, mask_tensor]).astype(np.float32)
+            pad_tensor[i] = 0.0  # could later be type_flag, etc.
+
+        # Stack shape: [id, value, mask, pad] × 32 = 128 total
+        return np.concatenate([id_tensor, values_tensor, mask_tensor, pad_tensor]).astype(np.float32)

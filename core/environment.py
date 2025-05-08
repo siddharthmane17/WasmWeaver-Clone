@@ -19,6 +19,8 @@ from drl.embedder.function import FunctionEmbedder
 from drl.embedder.stack import StackEmbedder
 from drl.embedder.tiles import TilesEmbedder
 
+from torch.utils.tensorboard import SummaryWriter
+
 EXCEPTION = -1
 FINISHED_SUCCESS = 1
 
@@ -58,7 +60,6 @@ class WasmWeaverEnv(gym.Env):
 
         self.action_space = Discrete(len(self.tiles))
 
-        # All embeddings flattened
         function_space = self.function_embedder.get_space()
         stack_space = self.stack_embedder.get_space()
         constraints_space = self.constraints_embedder.get_space()
@@ -86,6 +87,14 @@ class WasmWeaverEnv(gym.Env):
         self.thread: threading.Thread | None = None
         self.finish_state = None
         self.finish_thread = False
+
+        self.current_step = 0  # Track step count
+
+        # TensorBoard logging for stack/tile metrics
+        self.writer = SummaryWriter(log_dir="./wasmweaver_tensorboard/env_metrics")
+        self.episode_stack_sizes = []
+        self.episode_tile_counts = {}
+        self.episode_counter = 0
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -145,17 +154,11 @@ class WasmWeaverEnv(gym.Env):
         self.thread.start()
 
     def _get_flat_obs(self):
-        # New order: Stack → Function → Constraints → Tile (one-hot + arg)
-        stack_embedding = self.stack_embedder(self.current_state.stack)
-        function_embedding = self.function_embedder(self.current_function)
-        constraints_embedding = self.constraints_embedder(self.current_state.constraints.constraints)
-        tile_embedding = self.tiles_embedder(self.current_tile)
-
         return np.concatenate([
-            stack_embedding,
-            function_embedding,
-            constraints_embedding,
-            tile_embedding
+            self.stack_embedder(self.current_state.stack),
+            self.function_embedder(self.current_function),
+            self.constraints_embedder(self.current_state.constraints.constraints),
+            self.tiles_embedder(self.current_tile)
         ]).astype(np.float32)
 
     def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
@@ -163,22 +166,60 @@ class WasmWeaverEnv(gym.Env):
         self.action_ready.release()
         self.global_state_ready.acquire()
 
+        self.current_step += 1
+
         done = False
         truncated = False
-        reward = 0
+        reward = 0.0
 
         if isinstance(self.finish_state, Exception):
-            reward = EXCEPTION
+            reward = -1.0
             done = True
         elif self.finish_state == "Success":
-            reward = FINISHED_SUCCESS
+            reward = 1.0
             done = True
+        else:
+            # Reward shaping for learning signals
+            if self.selected_tile.name != "NoOp":
+                reward += 0.01
+            if len(self.current_state.stack.get_current_frame().stack) > 0:
+                reward += 0.02
+            if self.selected_tile.name == "NoOp":
+                reward -= 0.01
+
+        # Track metrics
+        stack_size = len(self.current_state.stack.get_current_frame().stack)
+
+        self.episode_stack_sizes.append(stack_size)
+
+        tile_name = self.selected_tile.name
+        self.episode_tile_counts[tile_name] = self.episode_tile_counts.get(tile_name, 0) + 1
+
+        if done:
+            avg_stack = np.mean(self.episode_stack_sizes)
+            self.writer.add_scalar("env/avg_stack_size", avg_stack, self.episode_counter)
+
+            for tile, count in self.episode_tile_counts.items():
+                self.writer.add_scalar(f"tiles/{tile}", count, self.episode_counter)
+
+            self.episode_counter += 1
+            self.episode_stack_sizes = []
+            self.episode_tile_counts = {}
 
         obs = self._get_flat_obs()
-        return obs, reward, done, truncated, {}
+
+        info = {}
+        if done:
+            info["episode"] = {
+                "r": reward,
+                "l": self.current_step
+            }
+
+        return obs, reward, done, truncated, info
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[ObsType, dict[str, Any]]:
         super().reset(seed=seed)
         self._init_state()
+        self.current_step = 0
         self.global_state_ready.acquire()
         return self._get_flat_obs(), {}
